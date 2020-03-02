@@ -53,11 +53,13 @@ class NodeMonitor(object):
     def update(self):
         """ Record cpu and memory information about this procress into a buffer """
         try:
-            self.cpu_log.append(self._process.get_cpu_percent(interval=0))
-            virt, real = self._process.get_memory_info()
+            self.cpu_log.append(self._process.cpu_percent(interval=0))
+            mem_info = self._process.memory_info()  # Changed according to https://psutil.readthedocs.io/en/latest/
+            real = mem_info[0]
+            virt = mem_info[1]
             self.virt_log.append(virt)
             self.res_log.append(real)
-            self.num_threads = max(self.num_threads, self._process.get_num_threads())
+            self.num_threads = max(self.num_threads, self._process.num_threads())
         except psutil.NoSuchProcess:
             rospy.logwarn("Lost Node Monitor for '%s'" % self.node)
             self._process = None
