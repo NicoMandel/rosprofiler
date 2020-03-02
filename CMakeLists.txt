@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(rosprofiler)
 
-find_package(catkin REQUIRED COMPONENTS ros_statistics_msgs)
+find_package(catkin REQUIRED COMPONENTS ros_statistics_msgs ros_topology_msgs)
 
 catkin_python_setup()
 
