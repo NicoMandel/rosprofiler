@@ -55,8 +55,8 @@ class NodeMonitor(object):
         try:
             self.cpu_log.append(self._process.cpu_percent(interval=0))
             mem_info = self._process.memory_info()  # Changed according to https://psutil.readthedocs.io/en/latest/
-            real = mem_info[0]
-            virt = mem_info[1]
+            real = mem_info.rss
+            virt = mem_info.vms
             self.virt_log.append(virt)
             self.res_log.append(real)
             self.num_threads = max(self.num_threads, self._process.num_threads())
