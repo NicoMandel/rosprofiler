@@ -44,7 +44,6 @@ def get_ros_hostname():
     ros_hostname = os.environ.get('ROS_HOSTNAME')
     return ros_hostname if is_legal_name(ros_hostname) else None
 
-
 def get_ros_ip():
     """ Try to get the ROS_IP environment variable as a valid name.
     Returns: an ip address with '.' replaced with '_', or None if not set.
@@ -60,6 +59,9 @@ def get_sys_hostname():
     Otherwise, return the first 6 digits of the md5sum of the hostname
     """
     hostname = rosgraph.network.get_host_name()
+    hostname = hostname.replace('.', '_')
+    hostname = hostname.replace('-', '_')
+    hostname = hostname.replace(':', '_')
     return hostname if is_legal_name(hostname) else hashlib.md5(hostname).hexdigest()[:6]
 
 
