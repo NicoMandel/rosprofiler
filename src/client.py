@@ -12,12 +12,16 @@ TODO:
         1. bw and hz from the documentation I found online. List which Topics this should be done for
         2. for the Jetson Nano: get the values for the Power consumption
     5. Put the values into relation with the ISO standard and what they need
+
+
+HINTS:  ROSNODE API to find lists and machines and nodes
+http://docs.ros.org/hydro/api/rosnode/html/
 """
 
 
 import rospy
 from ros_statistics_msgs.msg import HostStatistics, NodeStatistics
-
+import socket
 
 
 class ProfileClient:
@@ -34,7 +38,7 @@ class ProfileClient:
         # TODO 3: turn the nodes and hosts which are supposed to be listened to into ROS parameters
         # https://www.geeksforgeeks.org/display-hostname-ip-address-python/
         # for now: hardcoded lists
-        ip_nano = "192.168.1.120"
+        ip_nano = socket.gethostbyname("nano-wired")
         self.ips = [ip_nano]
 
         node="wp_node"
