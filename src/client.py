@@ -13,6 +13,9 @@ TODO:
         2. for the Jetson Nano: get the values for the Power consumption
     5. Put the values into relation with the ISO standard and what they need
 
+    TODO: convert the window_start and stop msgs from the time default
+    TODO: Convert the cpu_load msgs, they are arrays
+
 
 HINTS:  ROSNODE API to find lists and machines and nodes
 http://docs.ros.org/hydro/api/rosnode/html/
@@ -49,10 +52,14 @@ class ProfileClient:
         self.node_df = pd.DataFrame(index=extracted_statistics_node, columns=self.nodes)
 
         # Create a temporary dataframe, for once-off use
-        self._temp_node_df = pd.DataFrame(0,columns=extracted_statistics_node)
+        self._node_reset_array = pd.np.zeros((1, len(self.extracted_statistics_node)),dtype=pd.np.float64)
+        self._node_temp_df = pd.DataFrame(self._node_reset_array,columns=self.extracted_statistics_node)
         
+        # Do the same for the hosts
         self.extracted_statistics_host = ["Window Start","Window Stop", "Samples", "CPU load mean", "CPU load max", "Phymem used mean", "Phymem used max", "phymem avail mean", "Phymem avail max"]
         self.host_df = pd.DataFrame(index=extracted_statistics_host, columns=self.ips)
+        self._host_reset_arr = pd.np.zeros((1, len(self.extracted_statistics_host)), dtype=pd.np.float64)
+        self._host_temp_df = pd.DataFrame(self._host_reset_arr,columns=self.extracted_statistics_host)
 
     
     def host_callback(self, msg):
@@ -62,29 +69,62 @@ class ProfileClient:
             cpu load: mean, std dev, max
             phymem_used: mean, std, max
             phymem_avail: mean, std, max
-            TODO: Check in the psutil documentation what these values actually mean
-            TODO: Check in the rosprofiler nodes how and what this records. does this clear before resampling or take historical average?
         """
 
-        for ip in self.ips:
-            if msg.ipadress == ip:
-                # TODO 1: get the values out here
-                start_t = msg.window_start
-                stop_t = msg.window_stop
-                samples = msg.samples
-                
-                
+        temp_df = self._host_temp_df.copy(deep=True)
+        # TODO: Convert these, they are of primitive type time
+        duration = msg.window_stop - msg.window_start
+        
+
+        #
+        temp_df.at[0, "Samples"] = float(msg.samples)
+        # TODO: Convert these, they are arrays
+        temp_df.at[0, "CPU load mean"] = msg.cpu_load_mean
+        temp_df.at[0, "CPU load max"] = msg.cpu_load_max
+        #
+        temp_df.at[0, "Phymem used mean"] = msg.phymem_used_mean
+        temp_df.at[0, "Phymem used max"] = msg.phymem_used_max
+        temp_df.at[0, "phymem avail mean"] = msg.phymem_avail_mean
+        temp_df.at[0, "Phymem avail max"] = msg.phymem_avail_max
+
+        target_df = self.host_df_dict[msg.ipaddress]
+        
+        self.host_df_dict[msg.ipaddress] = self.concat_df(target_df, temp_df)
+
+
         
     def node_callback(self, msg):
         """ Callback on the node_statistics topic. Given Values are:
         Threads, Cpu load, virtual and real memory
         """
-
-        for node in self.nodes:
-            if msg.node == node:
-                # TODO 2: Node matched. Do stuff here
-                pass
+        # 0. initialise an empty dataframe
+        temp_df = self._node_temp_df.copy(deep=True)
         
+        pd.DataFrame(self._node_reset_array,columns=self.extracted_statistics_node)
+        # 1. Get all the values of interest out
+        # TODO: Convert these time msgs to something workable
+        duration = msg.window_stop - msg.window_start 
+        temp_df.at[0, "Window Start"] = msg.window_start
+        temp_df.at[0, "Window Stop"] = msg.window_stop
+        #
+        temp_df.at[0, "Samples"] = float(msg.samples)
+        temp_df.at[0, "Threads"] = msg.threads
+        temp_df.at[0, "CPU load mean"] = msg.cpu_load_mean 
+        temp_df.at[0, "CPU load max"] = msg.cpu_load_max
+        temp_df.at[0, "Virtual Memory mean"] = msg.virt_mem_mean
+        temp_df.at[0, "Virtual memory Max"] = msg.virt_mem_max
+        temp_df.at[0, "Real Memory Mean"] = msg.real_mem_mean
+        temp_df.at[0, "Real Memory Max"] = msg.real_mem_max
+        
+        # 2. Get the target dataframe which the values should be appended to out
+        target_df = self.node_df_dict[msg.node]
+
+        # 3. Concatenate the dfs
+        self.node_df_dict[msg.node] = self.concat_df(target_df, temp_df)
+
+
+    # Helper functions        
+    concat_df = staticmethod(lambda full_df, temp_df: pd.concat([full_df, temp_df]))
     
     def writeToFile(self, filename="Default"):
         """
