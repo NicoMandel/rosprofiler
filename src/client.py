@@ -54,7 +54,7 @@ class ProfileClient:
         self._node_temp_df = pd.DataFrame(self._node_reset_array,columns=self.extracted_statistics_node)
         
         # Do the same for the hosts
-        self.extracted_statistics_host = ["Duration" "Samples", "CPU load mean", "CPU load max", "Phymem used mean", "Phymem used max", "phymem avail mean", "Phymem avail max"]
+        self.extracted_statistics_host = ["Duration" "Samples", "CPU load mean of max", "CPU load max of mean", "Phymem used mean", "Phymem used max", "phymem avail mean", "Phymem avail max"]
         self.host_df = pd.DataFrame(index=extracted_statistics_host, columns=self.ips)
         self._host_reset_arr = pd.np.zeros((1, len(self.extracted_statistics_host)), dtype=pd.np.float64)
         self._host_temp_df = pd.DataFrame(self._host_reset_arr,columns=self.extracted_statistics_host)
@@ -74,9 +74,9 @@ class ProfileClient:
         duration = (rospy.Duration(msg.window_stop - msg.window_start).to_nsec()) / 1000
         temp_df.at[0, "Duration"] = duration
         temp_df.at[0, "Samples"] = float(msg.samples)
-        # TODO: Convert these, they are arrays
-        temp_df.at[0, "CPU load mean"] = pd.np.meanmsg.cpu_load_mean
-        temp_df.at[0, "CPU load max"] = msg.cpu_load_max
+        # Converted host statistics - mean of max and max of mean
+        temp_df.at[0, "CPU load max of mean"] = pd.np.mean(msg.cpu_load_mean)
+        temp_df.at[0, "CPU load mean of max"] = pd.np.max(msg.cpu_load_max)
 
         temp_df.at[0, "Phymem used mean"] = (msg.phymem_used_mean >> 20)
         temp_df.at[0, "Phymem used max"] = (msg.phymem_used_max >> 20)
