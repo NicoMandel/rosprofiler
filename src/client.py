@@ -54,7 +54,7 @@ class ProfileClient:
         self._node_temp_df = pd.DataFrame(self._node_reset_array,columns=self.extracted_statistics_node)
         
         # Do the same for the hosts
-        self.extracted_statistics_host = ["Duration" "Samples", "CPU load mean of max", "CPU load max of mean", "Phymem used mean", "Phymem used max", "phymem avail mean", "Phymem avail max"]
+        self.extracted_statistics_host = ["Duration", "Samples", "CPU load mean of max", "CPU load max of mean", "Phymem used mean", "Phymem used max", "phymem avail mean", "Phymem avail max"]
         self.host_df = pd.DataFrame(index=extracted_statistics_host, columns=self.ips)
         self._host_reset_arr = pd.np.zeros((1, len(self.extracted_statistics_host)), dtype=pd.np.float64)
         self._host_temp_df = pd.DataFrame(self._host_reset_arr,columns=self.extracted_statistics_host)
