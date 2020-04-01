@@ -22,6 +22,8 @@ http://docs.ros.org/hydro/api/rosnode/html/
 import rospy
 from ros_statistics_msgs.msg import HostStatistics, NodeStatistics
 import socket
+import pandas as pd # to gather the data collected
+import os.path
 
 
 class ProfileClient:
@@ -42,7 +44,12 @@ class ProfileClient:
         self.ips = [ip_nano]
 
         node="wp_node"
-        self.nodes[node]
+        self.nodes = [node]
+        extracted_statistics_node = ["Threads", "CPU load mean", "CPU load max", "Virtual Memory mean", "Virtual memory Max", "Real Memory Mean", "Real Memory Max"]
+        self.node_df = pd.DataFrame(index=extracted_statistics_node, columns=self.nodes)
+
+        extracted_statistics_host = ["CPU load mean", "CPU load max", "Phymem used mean", "Phymem used max", "phymem avail mean", "Phymem avail max"]
+        self.host_df = pd.DataFrame(index=extracted_statistics_host, columns=self.ips)
 
     
     def host_callback(self, msg):
@@ -59,7 +66,11 @@ class ProfileClient:
         for ip in self.ips:
             if msg.ipadress == ip:
                 # TODO 1: get the values out here
-                pass
+                start_t = msg.window_start
+                stop_t = msg.window_stop
+                samples = msg.samples
+                
+                
         
 
     
@@ -73,11 +84,17 @@ class ProfileClient:
                 # TODO 2: Node matched. Do stuff here
                 pass
         
+    
+    def writeToFile(self, filename="Default"):
+        """
+        Function to record all the collected data into an Excel file - use pd.excelwriter
+        TODO: Write this function
+        """
 
-
-
-
-
+        dirname = os.path.abspath(__file__)
+        fname = os.path.join(dirname,fname+".xlsx")
+        # with pd.ExcelWriter(fname_excel) as writer:
+        #     df.to_excel(writer, sheet_name=target_f_name)
 
 
 
@@ -94,6 +111,8 @@ if __name__=="__main__":
         try:
             rospy.spin()
         except rospy.ROSInterruptException as e:
+            # TODO: Write a function in here that will write everything from the class to file
+            cl.writeToFile()
             rospy.logerr_once(e)
 
     
