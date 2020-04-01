@@ -75,13 +75,13 @@ class ProfileClient:
         temp_df.at[0, "Duration"] = duration
         temp_df.at[0, "Samples"] = float(msg.samples)
         # TODO: Convert these, they are arrays
-        temp_df.at[0, "CPU load mean"] = msg.cpu_load_mean
+        temp_df.at[0, "CPU load mean"] = pd.np.meanmsg.cpu_load_mean
         temp_df.at[0, "CPU load max"] = msg.cpu_load_max
-        # TODO: bit shift these values
-        temp_df.at[0, "Phymem used mean"] = msg.phymem_used_mean
-        temp_df.at[0, "Phymem used max"] = msg.phymem_used_max
-        temp_df.at[0, "phymem avail mean"] = msg.phymem_avail_mean
-        temp_df.at[0, "Phymem avail max"] = msg.phymem_avail_max
+
+        temp_df.at[0, "Phymem used mean"] = (msg.phymem_used_mean >> 20)
+        temp_df.at[0, "Phymem used max"] = (msg.phymem_used_max >> 20)
+        temp_df.at[0, "phymem avail mean"] = (msg.phymem_avail_mean >> 20)
+        temp_df.at[0, "Phymem avail max"] = (msg.phymem_avail_max >> 20)
 
         target_df = self.host_df_dict[msg.ipaddress]
         
@@ -106,10 +106,11 @@ class ProfileClient:
         # TODO: percentage of total total local use - change this to be more meaningful from psutil
         temp_df.at[0, "CPU load mean"] = msg.cpu_load_mean 
         temp_df.at[0, "CPU load max"] = msg.cpu_load_max
-        temp_df.at[0, "Virtual Memory mean"] = msg.virt_mem_mean
-        temp_df.at[0, "Virtual memory Max"] = msg.virt_mem_max
-        temp_df.at[0, "Real Memory Mean"] = msg.real_mem_mean
-        temp_df.at[0, "Real Memory Max"] = msg.real_mem_max
+
+        temp_df.at[0, "Virtual Memory mean"] = (msg.virt_mem_mean >> 20)
+        temp_df.at[0, "Virtual memory Max"] = (msg.virt_mem_max >> 20)
+        temp_df.at[0, "Real Memory Mean"] = (msg.real_mem_mean >> 20)
+        temp_df.at[0, "Real Memory Max"] = (msg.real_mem_max >> 20)
         
         # 2. Get the target dataframe which the values should be appended to out
         target_df = self.node_df_dict[msg.node]
