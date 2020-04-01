@@ -13,7 +13,6 @@ TODO:
         2. for the Jetson Nano: get the values for the Power consumption
     5. Put the values into relation with the ISO standard and what they need
 
-    TODO: convert the window_start and stop msgs from the time default
     TODO: Convert the cpu_load msgs, they are arrays
 
 
@@ -41,14 +40,13 @@ class ProfileClient:
         rospy.Subscriber("/node_statistics", NodeStatistics, self.node_callback, queue_size=10)
 
         # TODO 3: turn the nodes and hosts which are supposed to be listened to into ROS parameters
-        # https://www.geeksforgeeks.org/display-hostname-ip-address-python/
         # for now: hardcoded lists
         ip_nano = socket.gethostbyname("nano-wired")
         self.ips = [ip_nano]
 
         node="wp_node"
         self.nodes = [node]
-        self.extracted_statistics_node = ["Window Start","Window Stop", "Samples", "Threads", "CPU load mean", "CPU load max", "Virtual Memory mean", "Virtual memory Max", "Real Memory Mean", "Real Memory Max"]
+        self.extracted_statistics_node = ["Duration", "Samples", "Threads", "CPU load mean", "CPU load max", "Virtual Memory mean", "Virtual memory Max", "Real Memory Mean", "Real Memory Max"]
         self.node_df = pd.DataFrame(index=extracted_statistics_node, columns=self.nodes)
 
         # Create a temporary dataframe, for once-off use
@@ -56,7 +54,7 @@ class ProfileClient:
         self._node_temp_df = pd.DataFrame(self._node_reset_array,columns=self.extracted_statistics_node)
         
         # Do the same for the hosts
-        self.extracted_statistics_host = ["Window Start","Window Stop", "Samples", "CPU load mean", "CPU load max", "Phymem used mean", "Phymem used max", "phymem avail mean", "Phymem avail max"]
+        self.extracted_statistics_host = ["Duration" "Samples", "CPU load mean", "CPU load max", "Phymem used mean", "Phymem used max", "phymem avail mean", "Phymem avail max"]
         self.host_df = pd.DataFrame(index=extracted_statistics_host, columns=self.ips)
         self._host_reset_arr = pd.np.zeros((1, len(self.extracted_statistics_host)), dtype=pd.np.float64)
         self._host_temp_df = pd.DataFrame(self._host_reset_arr,columns=self.extracted_statistics_host)
@@ -72,16 +70,14 @@ class ProfileClient:
         """
 
         temp_df = self._host_temp_df.copy(deep=True)
-        # TODO: Convert these, they are of primitive type time
-        duration = msg.window_stop - msg.window_start
-        
-
-        #
+        # Times converted to milisecond durations
+        duration = (rospy.Duration(msg.window_stop - msg.window_start).to_nsec()) / 1000
+        temp_df.at[0, "Duration"] = duration
         temp_df.at[0, "Samples"] = float(msg.samples)
         # TODO: Convert these, they are arrays
         temp_df.at[0, "CPU load mean"] = msg.cpu_load_mean
         temp_df.at[0, "CPU load max"] = msg.cpu_load_max
-        #
+        # TODO: bit shift these values
         temp_df.at[0, "Phymem used mean"] = msg.phymem_used_mean
         temp_df.at[0, "Phymem used max"] = msg.phymem_used_max
         temp_df.at[0, "phymem avail mean"] = msg.phymem_avail_mean
@@ -102,13 +98,12 @@ class ProfileClient:
         
         pd.DataFrame(self._node_reset_array,columns=self.extracted_statistics_node)
         # 1. Get all the values of interest out
-        # TODO: Convert these time msgs to something workable
-        duration = msg.window_stop - msg.window_start 
-        temp_df.at[0, "Window Start"] = msg.window_start
-        temp_df.at[0, "Window Stop"] = msg.window_stop
-        #
+        # Times converted to milisecond durations
+        duration = (rospy.Duration(msg.window_stop - msg.window_start).to_nsec()) / 1000 
+        temp_df.at[0, "Duration"] = duration
         temp_df.at[0, "Samples"] = float(msg.samples)
-        temp_df.at[0, "Threads"] = msg.threads
+        temp_df.at[0, "Threads"] = float(msg.threads)
+        # TODO: percentage of total total local use - change this to be more meaningful from psutil
         temp_df.at[0, "CPU load mean"] = msg.cpu_load_mean 
         temp_df.at[0, "CPU load max"] = msg.cpu_load_max
         temp_df.at[0, "Virtual Memory mean"] = msg.virt_mem_mean
@@ -125,7 +120,7 @@ class ProfileClient:
 
     # Helper functions        
     concat_df = staticmethod(lambda full_df, temp_df: pd.concat([full_df, temp_df]))
-    
+
     def writeToFile(self, filename="Default"):
         """
         Function to record all the collected data into an Excel file - use pd.excelwriter
