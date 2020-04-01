@@ -2,3 +2,5 @@
 *.swp
 
 **/.vscode/
+
+*/src/test*.py 

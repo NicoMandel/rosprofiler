@@ -45,10 +45,13 @@ class ProfileClient:
 
         node="wp_node"
         self.nodes = [node]
-        extracted_statistics_node = ["Threads", "CPU load mean", "CPU load max", "Virtual Memory mean", "Virtual memory Max", "Real Memory Mean", "Real Memory Max"]
+        self.extracted_statistics_node = ["Window Start","Window Stop", "Samples", "Threads", "CPU load mean", "CPU load max", "Virtual Memory mean", "Virtual memory Max", "Real Memory Mean", "Real Memory Max"]
         self.node_df = pd.DataFrame(index=extracted_statistics_node, columns=self.nodes)
 
-        extracted_statistics_host = ["CPU load mean", "CPU load max", "Phymem used mean", "Phymem used max", "phymem avail mean", "Phymem avail max"]
+        # Create a temporary dataframe, for once-off use
+        self._temp_node_df = pd.DataFrame(0,columns=extracted_statistics_node)
+        
+        self.extracted_statistics_host = ["Window Start","Window Stop", "Samples", "CPU load mean", "CPU load max", "Phymem used mean", "Phymem used max", "phymem avail mean", "Phymem avail max"]
         self.host_df = pd.DataFrame(index=extracted_statistics_host, columns=self.ips)
 
     
@@ -72,8 +75,6 @@ class ProfileClient:
                 
                 
         
-
-    
     def node_callback(self, msg):
         """ Callback on the node_statistics topic. Given Values are:
         Threads, Cpu load, virtual and real memory
