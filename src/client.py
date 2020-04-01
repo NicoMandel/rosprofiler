@@ -71,7 +71,7 @@ class ProfileClient:
 
         temp_df = self._host_temp_df.copy(deep=True)
         # Times converted to milisecond durations
-        duration = (rospy.Duration(msg.window_stop - msg.window_start).to_nsec()) / 1000
+        duration = (rospy.Duration(msg.window_stop - msg.window_start).to_nsec() / 1000)
         temp_df.at[0, "Duration"] = duration
         temp_df.at[0, "Samples"] = float(msg.samples)
         # Converted host statistics - mean of max and max of mean
@@ -91,15 +91,16 @@ class ProfileClient:
         
     def node_callback(self, msg):
         """ Callback on the node_statistics topic. Given Values are:
-        Threads, Cpu load, virtual and real memory
+            Threads, Cpu load, virtual and real memory
         """
+
         # 0. initialise an empty dataframe
         temp_df = self._node_temp_df.copy(deep=True)
         
         pd.DataFrame(self._node_reset_array,columns=self.extracted_statistics_node)
         # 1. Get all the values of interest out
         # Times converted to milisecond durations
-        duration = (rospy.Duration(msg.window_stop - msg.window_start).to_nsec()) / 1000 
+        duration = (rospy.Duration(msg.window_stop - msg.window_start).to_nsec() / 1000) 
         temp_df.at[0, "Duration"] = duration
         temp_df.at[0, "Samples"] = float(msg.samples)
         temp_df.at[0, "Threads"] = float(msg.threads)
@@ -125,16 +126,19 @@ class ProfileClient:
     def writeToFile(self, filename="Default"):
         """
         Function to record all the collected data into an Excel file - use pd.excelwriter
-        TODO: Write this function
         """
 
-        dirname = os.path.abspath(__file__)
-        fname = os.path.join(dirname,fname+".xlsx")
-        # with pd.ExcelWriter(fname_excel) as writer:
-        #     df.to_excel(writer, sheet_name=target_f_name)
+        parentDir = os.path.dirname(os.path.abspath(__file__))
+        fname = os.path.join(parentDir,filename+"_nodes"+".xlsx")
+        with pd.ExcelWriter(fname) as writer:
+            for node_name, df in self.node_df_dict.items():
+                df.to_excel(writer, sheet_name=node_name)
 
-
-
+        fname = os.path.join(parentDir,filename+"_nodes"+".xlsx")
+        with pd.ExcelWriter(fname) as writer:
+            for host_name, df in self.host_dict.items():
+                df.to_excel(writer, sheet_name=host_name)
+            
 
 
 if __name__=="__main__":
@@ -148,7 +152,6 @@ if __name__=="__main__":
         try:
             rospy.spin()
         except rospy.ROSInterruptException as e:
-            # TODO: Write a function in here that will write everything from the class to file
             cl.writeToFile()
             rospy.logerr_once(e)
 
