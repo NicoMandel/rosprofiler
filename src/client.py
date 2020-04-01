@@ -3,9 +3,9 @@
 """ 
 TODO:
     1. Check what the bloody rosprofiler actually records - averages, times, whatever
-        1. Check the units
+        1. Check the units. Here: https://stackoverflow.com/questions/21792655/psutil-virtual-memory-units-of-measurement
         2. Check at which intervals / timeframes it samples and deletes / resets
-        3. 
+        3. Check what the Memory units are - documented here: https://psutil.readthedocs.io/en/latest/#psutil.Process.memory_full_info
     2. Create a toy example with the listener / talker that we wrote
     3. record a toy example with time information
     4. extend the class with:
