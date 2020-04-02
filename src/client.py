@@ -26,6 +26,7 @@ from ros_statistics_msgs.msg import HostStatistics, NodeStatistics
 import socket
 import pandas as pd # to gather the data collected
 import os.path
+import rosnode
 
 
 class ProfileClient:
@@ -39,13 +40,15 @@ class ProfileClient:
         rospy.Subscriber("/host_statistics", HostStatistics, self.host_callback, queue_size=10)
         rospy.Subscriber("/node_statistics", NodeStatistics, self.node_callback, queue_size=10)
 
-        # TODO 3: turn the nodes and hosts which are supposed to be listened to into ROS parameters
-        # for now: hardcoded lists
-        ip_nano = socket.gethostbyname("nano-wired")
-        self.ips = [ip_nano]
+        # Get parameters from server to find out which files to track
+        hosts = rospy.get_param('hosts', default=["nano-wired"])
+        self.nodes = rospy.get_param('nodes', default=["talker", "listener"])
 
-        node="wp_node"
-        self.nodes = [node]
+        self.ips = []
+        for host in hosts:
+            ip = socket.gethostbyname(host)
+            self.ips.append(ip)
+        
         self.extracted_statistics_node = ["Duration", "Samples", "Threads", "CPU load mean", "CPU load max", "Virtual Memory mean", "Virtual memory Max", "Real Memory Mean", "Real Memory Max"]
         self.node_df = pd.DataFrame(index=extracted_statistics_node, columns=self.nodes)
 
@@ -68,24 +71,24 @@ class ProfileClient:
             phymem_used: mean, std, max
             phymem_avail: mean, std, max
         """
+        if msg.ipaddress in self.ips:
+            temp_df = self._host_temp_df.copy(deep=True)
+            # Times converted to milisecond durations
+            duration = (rospy.Duration(msg.window_stop - msg.window_start).to_nsec() / 1000)
+            temp_df.at[0, "Duration"] = duration
+            temp_df.at[0, "Samples"] = float(msg.samples)
+            # Converted host statistics - mean of max and max of mean
+            temp_df.at[0, "CPU load max of mean"] = pd.np.mean(msg.cpu_load_mean)
+            temp_df.at[0, "CPU load mean of max"] = pd.np.max(msg.cpu_load_max)
 
-        temp_df = self._host_temp_df.copy(deep=True)
-        # Times converted to milisecond durations
-        duration = (rospy.Duration(msg.window_stop - msg.window_start).to_nsec() / 1000)
-        temp_df.at[0, "Duration"] = duration
-        temp_df.at[0, "Samples"] = float(msg.samples)
-        # Converted host statistics - mean of max and max of mean
-        temp_df.at[0, "CPU load max of mean"] = pd.np.mean(msg.cpu_load_mean)
-        temp_df.at[0, "CPU load mean of max"] = pd.np.max(msg.cpu_load_max)
+            temp_df.at[0, "Phymem used mean"] = (msg.phymem_used_mean >> 20)
+            temp_df.at[0, "Phymem used max"] = (msg.phymem_used_max >> 20)
+            temp_df.at[0, "phymem avail mean"] = (msg.phymem_avail_mean >> 20)
+            temp_df.at[0, "Phymem avail max"] = (msg.phymem_avail_max >> 20)
 
-        temp_df.at[0, "Phymem used mean"] = (msg.phymem_used_mean >> 20)
-        temp_df.at[0, "Phymem used max"] = (msg.phymem_used_max >> 20)
-        temp_df.at[0, "phymem avail mean"] = (msg.phymem_avail_mean >> 20)
-        temp_df.at[0, "Phymem avail max"] = (msg.phymem_avail_max >> 20)
-
-        target_df = self.host_df_dict[msg.ipaddress]
-        
-        self.host_df_dict[msg.ipaddress] = self.concat_df(target_df, temp_df)
+            target_df = self.host_df_dict[msg.ipaddress]
+            
+            self.host_df_dict[msg.ipaddress] = self.concat_df(target_df, temp_df)
 
 
         
@@ -94,30 +97,31 @@ class ProfileClient:
             Threads, Cpu load, virtual and real memory
         """
 
-        # 0. initialise an empty dataframe
-        temp_df = self._node_temp_df.copy(deep=True)
-        
-        pd.DataFrame(self._node_reset_array,columns=self.extracted_statistics_node)
-        # 1. Get all the values of interest out
-        # Times converted to milisecond durations
-        duration = (rospy.Duration(msg.window_stop - msg.window_start).to_nsec() / 1000) 
-        temp_df.at[0, "Duration"] = duration
-        temp_df.at[0, "Samples"] = float(msg.samples)
-        temp_df.at[0, "Threads"] = float(msg.threads)
-        # TODO: percentage of total total local use - change this to be more meaningful from psutil
-        temp_df.at[0, "CPU load mean"] = msg.cpu_load_mean 
-        temp_df.at[0, "CPU load max"] = msg.cpu_load_max
+        if msg.node in self.nodes:
+            # 0. initialise an empty dataframe
+            temp_df = self._node_temp_df.copy(deep=True)
+            
+            pd.DataFrame(self._node_reset_array,columns=self.extracted_statistics_node)
+            # 1. Get all the values of interest out
+            # Times converted to milisecond durations
+            duration = (rospy.Duration(msg.window_stop - msg.window_start).to_nsec() / 1000) 
+            temp_df.at[0, "Duration"] = duration
+            temp_df.at[0, "Samples"] = float(msg.samples)
+            temp_df.at[0, "Threads"] = float(msg.threads)
+            # TODO: percentage of total total local use - change this to be more meaningful from psutil
+            temp_df.at[0, "CPU load mean"] = msg.cpu_load_mean 
+            temp_df.at[0, "CPU load max"] = msg.cpu_load_max
 
-        temp_df.at[0, "Virtual Memory mean"] = (msg.virt_mem_mean >> 20)
-        temp_df.at[0, "Virtual memory Max"] = (msg.virt_mem_max >> 20)
-        temp_df.at[0, "Real Memory Mean"] = (msg.real_mem_mean >> 20)
-        temp_df.at[0, "Real Memory Max"] = (msg.real_mem_max >> 20)
-        
-        # 2. Get the target dataframe which the values should be appended to out
-        target_df = self.node_df_dict[msg.node]
+            temp_df.at[0, "Virtual Memory mean"] = (msg.virt_mem_mean >> 20)
+            temp_df.at[0, "Virtual memory Max"] = (msg.virt_mem_max >> 20)
+            temp_df.at[0, "Real Memory Mean"] = (msg.real_mem_mean >> 20)
+            temp_df.at[0, "Real Memory Max"] = (msg.real_mem_max >> 20)
+            
+            # 2. Get the target dataframe which the values should be appended to out
+            target_df = self.node_df_dict[msg.node]
 
-        # 3. Concatenate the dfs
-        self.node_df_dict[msg.node] = self.concat_df(target_df, temp_df)
+            # 3. Concatenate the dfs
+            self.node_df_dict[msg.node] = self.concat_df(target_df, temp_df)
 
 
     # Helper functions        
