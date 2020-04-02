@@ -144,12 +144,12 @@ class ProfileClient:
         """
 
         parentDir = os.path.dirname(__file__)
-        fname = os.path.abspath(os.path.join(parentDir, '..','results',filename+'_nodes'+'.xlsx')
+        fname = os.path.abspath(os.path.join(parentDir, '..','results',filename+'_nodes'+'.xlsx'))
         with pd.ExcelWriter(fname) as writer:
             for node_name, df in self.node_df_dict.items():
                 df.to_excel(writer, sheet_name=node_name)
 
-        fname =  os.path.abspath(os.path.join(parentDir, '..','results',filename+'_hosts'+'.xlsx')
+        fname =  os.path.abspath(os.path.join(parentDir, '..','results',filename+'_hosts'+'.xlsx'))
         with pd.ExcelWriter(fname) as writer:
             for host_name, df in self.host_df_dict.items():
                 df.to_excel(writer, sheet_name=host_name)
