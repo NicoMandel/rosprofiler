@@ -26,19 +26,24 @@ from ros_statistics_msgs.msg import HostStatistics, NodeStatistics
 import socket
 import pandas as pd # to gather the data collected
 import os.path
-# import rosnode
+import rosnode
 
 
 class ProfileClient:
 
     def __init__(self):
         """ A client class on the rosprofiler topic msgs"""
-        # Waiting for the topic to get going
-        rospy.wait_for_message("/host_statistics", HostStatistics)
 
         # Get parameters from server to find out which files to track
-        hosts = rospy.get_param('hosts', default=["nano-wired"])
-        self.nodes = rospy.get_param('nodes', default=["talker", "listener"])
+        hosts = rospy.get_param('/hosts', default=None)
+        self.nodes = rospy.get_param('/nodes', default=None)
+        if hosts is None:
+            rospy.logwarn("No Machines specified. Logging All")
+            hosts = rosnode.get_machines_by_nodes()
+
+        if self.nodes is None:
+            rospy.logwarn("No Nodes specified. Logging All")
+            self.nodes = rosnode.get_node_names()
 
         # Setup work for the hosts
         self.extracted_statistics_host = ["Time","Duration", "Samples", "CPU load mean of max", "CPU load max of mean", "Phymem used mean", "Phymem used max", "phymem avail mean", "Phymem avail max"]
@@ -58,8 +63,12 @@ class ProfileClient:
         self.node_df_dict= {}
         for node in self.nodes:
             self.node_df_dict[node] = node_df.copy(deep=True)
+        
+        
+        # Waiting for the topic to get going
+        rospy.wait_for_message("/host_statistics", HostStatistics)
 
-        # # Subscribers last - to not mess up when messages come in before everything is set up
+        # Subscribers last - to not mess up when messages come in before everything is set up
         rospy.Subscriber("/host_statistics", HostStatistics, self.host_callback, queue_size=10)
         rospy.Subscriber("/node_statistics", NodeStatistics, self.node_callback, queue_size=10)
 
@@ -151,7 +160,7 @@ if __name__=="__main__":
     try:
         rospy.init_node("rosprofiler_client")
         cl = ProfileClient()
-    except Exception as e:
+    except rospy.ROSException as e:
         rospy.logerr(e)
     
     try:
