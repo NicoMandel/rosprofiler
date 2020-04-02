@@ -37,7 +37,7 @@ class ProfileClient:
         rospy.wait_for_message("/host_statistics", HostStatistics)
 
         # # Subscribers
-        rospy.Subscriber("/host_statistics", HostStatistics, self.host_callback, queue_size=10)
+        # rospy.Subscriber("/host_statistics", HostStatistics, self.host_callback, queue_size=10)
         rospy.Subscriber("/node_statistics", NodeStatistics, self.node_callback, queue_size=10)
 
         # Get parameters from server to find out which files to track
@@ -65,7 +65,9 @@ class ProfileClient:
         self._node_temp_df = pd.DataFrame(self._node_reset_array,columns=self.extracted_statistics_node)
         node_df = pd.DataFrame(columns=self.extracted_statistics_node, data=self._node_reset_array)
         self.node_df_dict= {}
+        print("Nodes: ")
         for node in self.nodes:
+            print(node)
             self.node_df_dict[node] = node_df.copy(deep=True)
 
     
@@ -124,6 +126,13 @@ class ProfileClient:
 
             # 3. Concatenate the dfs
             self.node_df_dict[msg.node] = self.concat_df(target_df, temp_df)
+
+            # 4. Debugging messages
+            print("Incoming Message Node Statistics : ")
+            print(temp_df.head())
+            print("Appended Section for {}: ".format(msg.node))
+            print(self.node_df_dict[msg.node].tail())
+
 
 
     # Helper functions        
