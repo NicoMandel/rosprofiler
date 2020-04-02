@@ -3,4 +3,6 @@
 
 **/.vscode/
 
+**/results/
+
 src/teststuff.py 
