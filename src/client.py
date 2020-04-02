@@ -143,13 +143,13 @@ class ProfileClient:
         Function to record all the collected data into an Excel file - use pd.excelwriter
         """
 
-        parentDir = os.path.dirname(os.path.abspath(__file__))
-        fname = os.path.join(parentDir,filename+"_nodes"+".xlsx")
+        parentDir = os.path.dirname(__file__)
+        fname = os.path.abspath(os.path.join(parentDir, '..','results',filename+'_nodes'+'.xlsx')
         with pd.ExcelWriter(fname) as writer:
             for node_name, df in self.node_df_dict.items():
                 df.to_excel(writer, sheet_name=node_name)
 
-        fname = os.path.join(parentDir,filename+"_hosts"+".xlsx")
+        fname =  os.path.abspath(os.path.join(parentDir, '..','results',filename+'_hosts'+'.xlsx')
         with pd.ExcelWriter(fname) as writer:
             for host_name, df in self.host_df_dict.items():
                 df.to_excel(writer, sheet_name=host_name)
