@@ -146,13 +146,15 @@ class ProfileClient:
         with pd.ExcelWriter(fname) as writer:
             print("Writing to file: {}".format(fname))
             for node_name, df in self.node_df_dict.items():
-                df.to_excel(writer, sheet_name=node_name.replace('/',''))
+                if df.shape[0] > 2:
+                    df.to_excel(writer, sheet_name=node_name.replace('/',''))
 
         fname =  os.path.abspath(os.path.join(parentDir, '..','results',self.filename+'_hosts'+'.xlsx'))
         with pd.ExcelWriter(fname) as writer:
             print("Writing to file: {}".format(fname))
             for host_name, df in self.host_df_dict.items():
-                df.to_excel(writer, sheet_name=host_name)
+                if df.shape[0] > 2:
+                    df.to_excel(writer, sheet_name=host_name)
             
 
 
