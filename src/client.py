@@ -36,19 +36,13 @@ class ProfileClient:
         # Waiting for the topic to get going
         rospy.wait_for_message("/host_statistics", HostStatistics)
 
-        # # Subscribers
-        # rospy.Subscriber("/host_statistics", HostStatistics, self.host_callback, queue_size=10)
-        rospy.Subscriber("/node_statistics", NodeStatistics, self.node_callback, queue_size=10)
-
         # Get parameters from server to find out which files to track
         hosts = rospy.get_param('hosts', default=["nano-wired"])
         self.nodes = rospy.get_param('nodes', default=["talker", "listener"])
 
         # Setup work for the hosts
-        self.extracted_statistics_host = ["Duration", "Samples", "CPU load mean of max", "CPU load max of mean", "Phymem used mean", "Phymem used max", "phymem avail mean", "Phymem avail max"]
-        self._host_reset_arr = pd.np.zeros((1, len(self.extracted_statistics_host)), dtype=pd.np.float64)
-        self._host_temp_df = pd.DataFrame(self._host_reset_arr,columns=self.extracted_statistics_host)
-        host_df = pd.DataFrame(columns=self.extracted_statistics_host, data=self._host_reset_arr)
+        self.extracted_statistics_host = ["Time","Duration", "Samples", "CPU load mean of max", "CPU load max of mean", "Phymem used mean", "Phymem used max", "phymem avail mean", "Phymem avail max"]
+        host_df = pd.DataFrame(columns=self.extracted_statistics_host).set_index("Time")
 
         # Assign a Dataframe to each host 
         self.ips = []
@@ -60,15 +54,14 @@ class ProfileClient:
         
         # Setup work for the Nodes
         self.extracted_statistics_node = ["Time", "Duration", "Samples", "Threads", "CPU load mean", "CPU load max", "Virtual Memory mean", "Virtual memory Max", "Real Memory Mean", "Real Memory Max"]
-        # Create a temporary dataframe, for once-off use
-        # self._node_reset_array = pd.np.zeros((1, len(self.extracted_statistics_node)),dtype=pd.np.float64)
-        # self._node_temp_df = pd.DataFrame(self._node_reset_array,columns=self.extracted_statistics_node).set_index("Time")
         node_df = pd.DataFrame(columns=self.extracted_statistics_node).set_index("Time")
         self.node_df_dict= {}
-        print("Nodes: ")
         for node in self.nodes:
-            print(node)
             self.node_df_dict[node] = node_df.copy(deep=True)
+
+        # # Subscribers last - to not mess up when messages come in before everything is set up
+        rospy.Subscriber("/host_statistics", HostStatistics, self.host_callback, queue_size=10)
+        rospy.Subscriber("/node_statistics", NodeStatistics, self.node_callback, queue_size=10)
 
     
     def host_callback(self, msg):
@@ -80,23 +73,28 @@ class ProfileClient:
             phymem_avail: mean, std, max
         """
         if msg.ipaddress in self.ips:
-            temp_df = self._host_temp_df.copy(deep=True)
+            temp_df = pd.DataFrame(columns=self.extracted_statistics_host).set_index("Time")
+
             # Times converted to milisecond durations
-            duration = (msg.window_stop - msg.window_start).to_nsec() / 1000
-            temp_df.at[0, "Duration"] = duration
-            temp_df.at[0, "Samples"] = float(msg.samples)
+            t = msg.window_stop.to_sec()
+            duration = (msg.window_stop - msg.window_start).to_nsec() / 1000000
+            temp_df.at[t, "Duration"] = duration
+            temp_df.at[t, "Samples"] = float(msg.samples)
             # Converted host statistics - mean of max and max of mean
-            temp_df.at[0, "CPU load max of mean"] = pd.np.mean(msg.cpu_load_mean)
-            temp_df.at[0, "CPU load mean of max"] = pd.np.max(msg.cpu_load_max)
-            temp_df.at[0, "Phymem used mean"] = (int(pd.np.floor(msg.phymem_used_mean)) >> 20)
-            temp_df.at[0, "Phymem used max"] = (int(pd.np.floor(msg.phymem_used_max)) >> 20)
-            temp_df.at[0, "phymem avail mean"] = (int(pd.np.floor(msg.phymem_avail_mean)) >> 20)
-            temp_df.at[0, "Phymem avail max"] = (int(pd.np.floor(msg.phymem_avail_max)) >> 20)
-            target_df = self.host_df_dict[msg.ipaddress]   
+            temp_df.at[t, "CPU load max of mean"] = pd.np.mean(msg.cpu_load_mean)
+            temp_df.at[t, "CPU load mean of max"] = pd.np.max(msg.cpu_load_max)
+            temp_df.at[t, "Phymem used mean"] = (int(pd.np.floor(msg.phymem_used_mean)) >> 20)
+            temp_df.at[t, "Phymem used max"] = (int(pd.np.floor(msg.phymem_used_max)) >> 20)
+            temp_df.at[t, "phymem avail mean"] = (int(pd.np.floor(msg.phymem_avail_mean)) >> 20)
+            temp_df.at[t, "Phymem avail max"] = (int(pd.np.floor(msg.phymem_avail_max)) >> 20)
+            target_df = self.host_df_dict[msg.ipaddress]
             self.host_df_dict[msg.ipaddress] = self.concat_df(target_df, temp_df)
 
+            print(self.host_df_dict[self.ips[0]].shape)
+            if self.host_df_dict[self.ips[0]].shape[0] > 10:
+                self.writeToFile()
 
-        
+       
     def node_callback(self, msg):
         """ Callback on the node_statistics topic. Given Values are:
             Threads, Cpu load, virtual and real memory
@@ -104,13 +102,11 @@ class ProfileClient:
 
         if msg.node in self.nodes:
             # 0. initialise an empty dataframe
-            print(msg.node)
             temp_df = pd.DataFrame(columns=self.extracted_statistics_node).set_index("Time")
             
-            # pd.DataFrame(self._node_reset_array,columns=self.extracted_statistics_node)
             # 1. Get all the values of interest out
-            # Times converted to milisecond durations
-            t = msg.window_stop.to_nsec() / 1000000000
+            # Times converted to second durations
+            t = msg.window_stop.to_sec()
             duration = (msg.window_stop - msg.window_start).to_nsec() / 1000000 
             temp_df.at[t, "Duration"] = duration
             temp_df.at[t, "Samples"] = float(msg.samples)
@@ -129,18 +125,11 @@ class ProfileClient:
             # 3. Concatenate the dfs
             self.node_df_dict[msg.node] = self.concat_df(target_df, temp_df)
 
-            # 4. Debugging messages
-            print("Incoming Message Node Statistics : ")
-            print(temp_df.head())
-            print("Appended Section for {}: ".format(msg.node))
-            print(self.node_df_dict[msg.node].tail())
-
-
 
     # Helper functions        
     concat_df = staticmethod(lambda full_df, temp_df: pd.concat([full_df, temp_df]))
 
-    def writeToFile(self, filename="Default"):
+    def writeToFile(self, filename="default"):
         """
         Function to record all the collected data into an Excel file - use pd.excelwriter
         """
@@ -151,9 +140,9 @@ class ProfileClient:
             for node_name, df in self.node_df_dict.items():
                 df.to_excel(writer, sheet_name=node_name)
 
-        fname = os.path.join(parentDir,filename+"_nodes"+".xlsx")
+        fname = os.path.join(parentDir,filename+"_hosts"+".xlsx")
         with pd.ExcelWriter(fname) as writer:
-            for host_name, df in self.host_dict.items():
+            for host_name, df in self.host_df_dict.items():
                 df.to_excel(writer, sheet_name=host_name)
             
 
@@ -165,11 +154,10 @@ if __name__=="__main__":
     except Exception as e:
         rospy.logerr(e)
     
-    while not rospy.is_shutdown():
-        try:
-            rospy.spin()
-        except rospy.ROSInterruptException as e:
-            cl.writeToFile()
-            rospy.logerr_once(e)
+    try:
+        rospy.spin()
+    except rospy.ROSInterruptException as e:
+        cl.writeToFile()
+        rospy.logerr_once(e)
 
     
