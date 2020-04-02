@@ -31,7 +31,7 @@ import rosnode
 
 class ProfileClient:
 
-    def __init__(self):
+    def __init__(self, fname="default"):
         """ A client class on the rosprofiler topic msgs"""
 
         # Get parameters from server to find out which files to track
@@ -65,8 +65,10 @@ class ProfileClient:
             self.node_df_dict[node] = node_df.copy(deep=True)
         
         
-        # Waiting for the topic to get going
+        # Waiting for the topic to get going and setting up shutdown function
         rospy.wait_for_message("/host_statistics", HostStatistics)
+        self.filename = fname
+        rospy.on_shutdown(self.writeToFile)
 
         # Subscribers last - to not mess up when messages come in before everything is set up
         rospy.Subscriber("/host_statistics", HostStatistics, self.host_callback, queue_size=10)
@@ -98,10 +100,6 @@ class ProfileClient:
             temp_df.at[t, "Phymem avail max"] = (int(pd.np.floor(msg.phymem_avail_max)) >> 20)
             target_df = self.host_df_dict[msg.ipaddress]
             self.host_df_dict[msg.ipaddress] = self.concat_df(target_df, temp_df)
-
-            print(self.host_df_dict[self.ips[0]].shape)
-            if self.host_df_dict[self.ips[0]].shape[0] > 10:
-                self.writeToFile()
 
        
     def node_callback(self, msg):
@@ -138,19 +136,21 @@ class ProfileClient:
     # Helper functions        
     concat_df = staticmethod(lambda full_df, temp_df: pd.concat([full_df, temp_df]))
 
-    def writeToFile(self, filename="default"):
+    def writeToFile(self):
         """
         Function to record all the collected data into an Excel file - use pd.excelwriter
         """
 
         parentDir = os.path.dirname(__file__)
-        fname = os.path.abspath(os.path.join(parentDir, '..','results',filename+'_nodes'+'.xlsx'))
+        fname = os.path.abspath(os.path.join(parentDir, '..','results',self.filename+'_nodes'+'.xlsx'))
         with pd.ExcelWriter(fname) as writer:
+            print("Writing to file: {}".format(fname))
             for node_name, df in self.node_df_dict.items():
                 df.to_excel(writer, sheet_name=node_name)
 
-        fname =  os.path.abspath(os.path.join(parentDir, '..','results',filename+'_hosts'+'.xlsx'))
+        fname =  os.path.abspath(os.path.join(parentDir, '..','results',self.filename+'_hosts'+'.xlsx'))
         with pd.ExcelWriter(fname) as writer:
+            print("Writing to file: {}".format(fname))
             for host_name, df in self.host_df_dict.items():
                 df.to_excel(writer, sheet_name=host_name)
             
@@ -166,7 +166,6 @@ if __name__=="__main__":
     try:
         rospy.spin()
     except rospy.ROSInterruptException as e:
-        cl.writeToFile()
         rospy.logerr_once(e)
 
     
