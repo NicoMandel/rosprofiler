@@ -59,11 +59,11 @@ class ProfileClient:
             self.host_df_dict[ip] = host_df.copy(deep=True)
         
         # Setup work for the Nodes
-        self.extracted_statistics_node = ["Duration", "Samples", "Threads", "CPU load mean", "CPU load max", "Virtual Memory mean", "Virtual memory Max", "Real Memory Mean", "Real Memory Max"]
+        self.extracted_statistics_node = ["Time", "Duration", "Samples", "Threads", "CPU load mean", "CPU load max", "Virtual Memory mean", "Virtual memory Max", "Real Memory Mean", "Real Memory Max"]
         # Create a temporary dataframe, for once-off use
-        self._node_reset_array = pd.np.zeros((1, len(self.extracted_statistics_node)),dtype=pd.np.float64)
-        self._node_temp_df = pd.DataFrame(self._node_reset_array,columns=self.extracted_statistics_node)
-        node_df = pd.DataFrame(columns=self.extracted_statistics_node, data=self._node_reset_array)
+        # self._node_reset_array = pd.np.zeros((1, len(self.extracted_statistics_node)),dtype=pd.np.float64)
+        # self._node_temp_df = pd.DataFrame(self._node_reset_array,columns=self.extracted_statistics_node).set_index("Time")
+        node_df = pd.DataFrame(columns=self.extracted_statistics_node).set_index("Time")
         self.node_df_dict= {}
         print("Nodes: ")
         for node in self.nodes:
@@ -104,22 +104,24 @@ class ProfileClient:
 
         if msg.node in self.nodes:
             # 0. initialise an empty dataframe
-            temp_df = self._node_temp_df.copy(deep=True)
+            print(msg.node)
+            temp_df = pd.DataFrame(columns=self.extracted_statistics_node).set_index("Time")
             
-            pd.DataFrame(self._node_reset_array,columns=self.extracted_statistics_node)
+            # pd.DataFrame(self._node_reset_array,columns=self.extracted_statistics_node)
             # 1. Get all the values of interest out
             # Times converted to milisecond durations
-            duration = (msg.window_stop - msg.window_start).to_nsec() / 1000 
-            temp_df.at[0, "Duration"] = duration
-            temp_df.at[0, "Samples"] = float(msg.samples)
-            temp_df.at[0, "Threads"] = float(msg.threads)
+            t = msg.window_stop.to_nsec() / 1000000000
+            duration = (msg.window_stop - msg.window_start).to_nsec() / 1000000 
+            temp_df.at[t, "Duration"] = duration
+            temp_df.at[t, "Samples"] = float(msg.samples)
+            temp_df.at[t, "Threads"] = float(msg.threads)
             # TODO: percentage of total total local use - change this to be more meaningful from psutil
-            temp_df.at[0, "CPU load mean"] = msg.cpu_load_mean 
-            temp_df.at[0, "CPU load max"] = msg.cpu_load_max
-            temp_df.at[0, "Virtual Memory mean"] = (int(pd.np.floor(msg.virt_mem_mean)) >> 20)
-            temp_df.at[0, "Virtual memory Max"] = (int(pd.np.floor(msg.virt_mem_max ))>> 20)
-            temp_df.at[0, "Real Memory Mean"] = (int(pd.np.floor(msg.real_mem_mean)) >> 20)
-            temp_df.at[0, "Real Memory Max"] = (int(pd.np.floor(msg.real_mem_max ))>> 20)
+            temp_df.at[t, "CPU load mean"] = msg.cpu_load_mean 
+            temp_df.at[t, "CPU load max"] = msg.cpu_load_max
+            temp_df.at[t, "Virtual Memory mean"] = (int(pd.np.floor(msg.virt_mem_mean)) >> 20)
+            temp_df.at[t, "Virtual memory Max"] = (int(pd.np.floor(msg.virt_mem_max ))>> 20)
+            temp_df.at[t, "Real Memory Mean"] = (int(pd.np.floor(msg.real_mem_mean)) >> 20)
+            temp_df.at[t, "Real Memory Max"] = (int(pd.np.floor(msg.real_mem_max ))>> 20)
             
             # 2. Get the target dataframe which the values should be appended to out
             target_df = self.node_df_dict[msg.node]
