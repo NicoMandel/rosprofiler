@@ -18,8 +18,9 @@ import psutil
 
 import rosgraph
 import rospy
+import socket
 
-from ros_statistics_msgs.msg import HostStatistics
+from ros_statistics_msgs.msg import NanoStatistics
 
 
 class HostMonitor(object):
@@ -34,6 +35,11 @@ class HostMonitor(object):
         self.phymem_avail_log = list()
         self.start_time = rospy.get_rostime()
 
+        # Section on defining the Nano filename
+        sys_host = socket.gethostname()
+        if "nan" in sys_host.lower():
+            self.power_file = "/sys/bus/i2c/devices/6-0040/iio_device/in_power0_input"
+
     def update(self):
         """ Record information about the cpu and memory usage for this host into a buffer """
         self.cpu_load_log.append(psutil.cpu_percent(interval=0, percpu=True))
@@ -41,17 +47,25 @@ class HostMonitor(object):
         self.phymem_avail_log.append(psutil.virtual_memory().free)
 
     def get_statistics(self):
-        """ Returns HostStatistics() using buffered information.
+        """ Returns NanoStatistics() using buffered information.
         :returns: statistics information collected about the host
-        :rtype: HostStatistics
+        :rtype: NanoStatistics
         """
 
-        statistics = HostStatistics()
+        statistics = NanoStatistics()
         statistics.hostname = self._hostname
         statistics.ipaddress = self._ipaddress
         statistics.window_start = self.start_time
         statistics.window_stop = rospy.get_rostime()
         statistics.samples = len(self.cpu_load_log)
+
+        # Section on getting the Nano power statistics
+        try:
+            with open(self.power_file, 'r') as pow_file:
+                val = int(pow_file.read())
+        except IOError:
+            val = -1
+        statistics.power = val
 
         if len(self.cpu_load_log) > 0:
             cpu_load_log = np.array(self.cpu_load_log)
