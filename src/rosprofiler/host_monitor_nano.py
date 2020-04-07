@@ -39,6 +39,8 @@ class HostMonitor(object):
         sys_host = socket.gethostname()
         if "nan" in sys_host.lower():
             self.power_file = "/sys/bus/i2c/devices/6-0040/iio_device/in_power0_input"
+        else:
+            self.power_file = ""
 
     def update(self):
         """ Record information about the cpu and memory usage for this host into a buffer """
