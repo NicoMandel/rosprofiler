@@ -31,9 +31,9 @@ import rosnode
 from rosgraph.names import is_legal_name
 
 from ros_statistics_msgs.msg import NodeStatistics
-from ros_statistics_msgs.msg import HostStatistics
+from ros_statistics_msgs.msg import NanoStatistics
 
-from host_monitor import HostMonitor
+from host_monitor_nano import HostMonitor
 from node_monitor import NodeMonitor
 
 
@@ -88,7 +88,7 @@ class Profiler(object):
         self._host_monitor = HostMonitor()
 
         self._node_publisher = rospy.Publisher('node_statistics', NodeStatistics, queue_size=10)
-        self._host_publisher = rospy.Publisher('host_statistics', HostStatistics, queue_size=10)
+        self._host_publisher = rospy.Publisher('host_statistics', NanoStatistics, queue_size=10)
 
         # Processes we are watching
         self._nodes = dict()
