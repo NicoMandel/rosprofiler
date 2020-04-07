@@ -7,7 +7,7 @@ catkin_python_setup()
 
 catkin_package()
 
-install(PROGRAMS scripts/rosprofiler scripts/rosgrapher
+install(PROGRAMS scripts/rosprofiler scripts/rosgrapher scripts/rosprofilerNano
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 if(CATKIN_ENABLE_TESTING)
