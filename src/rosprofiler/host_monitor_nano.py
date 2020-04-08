@@ -42,9 +42,12 @@ class HostMonitor(object):
         else:
             self.power_file = ""
 
+        # cpu count
+        self._cpu_count = psutil.cpu_count()
+
     def update(self):
         """ Record information about the cpu and memory usage for this host into a buffer """
-        self.cpu_load_log.append(psutil.cpu_percent(interval=0, percpu=True))
+        self.cpu_load_log.append(psutil.cpu_percent(interval=None, percpu=False))
         self.phymem_used_log.append(psutil.virtual_memory().used)
         self.phymem_avail_log.append(psutil.virtual_memory().free)
 
@@ -68,14 +71,13 @@ class HostMonitor(object):
         except IOError:
             val = -1
         statistics.power = val
+        statistics.cpu_count = self._cpu_count
 
         if len(self.cpu_load_log) > 0:
             cpu_load_log = np.array(self.cpu_load_log)
-            cpu_load_log = cpu_load_log.transpose()
-            for cpu in range(self._cpus_available):
-                statistics.cpu_load_mean.append(np.mean(cpu_load_log[cpu]))
-                statistics.cpu_load_std.append(np.std(cpu_load_log[cpu]))
-                statistics.cpu_load_max.append(np.max(cpu_load_log[cpu]))
+            statistics.cpu_load_mean = np.mean(cpu_load_log)
+            statistics.cpu_load_std = np.std(cpu_load_log)
+            statistics.cpu_load_max = np.max(cpu_load_log)
         if len(self.phymem_used_log) > 0:
             phymem_used_log = np.array(self.phymem_used_log)
             statistics.phymem_used_mean = np.mean(phymem_used_log)

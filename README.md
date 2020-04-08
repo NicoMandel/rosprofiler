@@ -19,7 +19,7 @@ Check with client.py whether the changes are the same noted down in there
         * [ ] one to show the free space - for capacity
         * [ ] for the host_statistics definitely want one that will show the total used space
         * [ ] for the node_statistics want one that will show the allocated __and__ used space
-- [ ] The cpu_percent part of the [node_statistics, L. 56](./src/rosprofiler/node_monitor.py#L56) may be very misleading - check these and find if there is maybe an absolute value we can use - or if we have to rely on the host_statistics value to then calculate the total usage
+- [x] The cpu_percent part of the [node_statistics, L. 56](./src/rosprofiler/node_monitor.py#L56) may be very misleading - check these and find if there is maybe an absolute value we can use - or if we have to rely on the host_statistics value to then calculate the total usage
 - [ ] Run a test example with the topic and BW timer 
 
 
@@ -44,7 +44,8 @@ Check with client.py whether the changes are the same noted down in there
                             * [ ] swap memory - used
                 * [x] CPU usage
                     * [x] Per Process CPU_Percent is most relevant, can be bigger than 100 and can also be divided by num_cpus for windows-like behaviour, see [documentation](https://psutil.readthedocs.io/en/latest/#psutil.Process.cpu_percent)
-                    * [ ] Host cpu_percent - system-wide cpu utilization, see [documentation](https://psutil.readthedocs.io/en/latest/#psutil.cpu_times)
+                    * [x] Host cpu_percent - system-wide global utilization - not a list anymore - see [documentation](https://psutil.readthedocs.io/en/latest/#psutil.cpu_times)
+                    * [x] Host logical CPU count - see [documentation](https://psutil.readthedocs.io/en/latest/#psutil.cpu_count)
                 * [x] GPU
                     * [x] Omit usage, because we do not target the GPU (yet), however the extension would be trivial
                 * [ ] Timing - on ROS topics
