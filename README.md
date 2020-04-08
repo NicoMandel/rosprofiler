@@ -20,17 +20,52 @@ Check with client.py whether the changes are the same noted down in there
         * [ ] for the host_statistics definitely want one that will show the total used space
         * [ ] for the node_statistics want one that will show the allocated __and__ used space
 - [ ] The cpu_percent part of the [node_statistics, L. 56](./src/rosprofiler/node_monitor.py#L56) may be very misleading - check these and find if there is maybe an absolute value we can use - or if we have to rely on the host_statistics value to then calculate the total usage
+- [ ] Run a test example with the topic and BW timer 
 
 
 - [x] Create a toy example with listener / talker
 - [x] Extend classes:
     - [x] Bw and HZ from online documentation. Check issuelog
     - [x] Get power values consumption - **For the Raspberry: Use the maximum Power consumption (which is likely limited by the USB) and multiply it with the CPU load as a proxy - arguing that heat dissipation will be the major determining factor, with equal r/w access**
-    - [ ] Put power monitoring into message and send over
+    - [x] Put power monitoring into message and send over
     - [ ] Put different memory values into classes, s.a.
-- [ ] Adapt the code to use the new msg type monitoring power and new memory values
+- [x] Adapt the code to use the new msg type monitoring power and new memory values
 - [ ] Check with ISO what is required/ what we can and want to use
-
+    * We want to look at the following values:
+        * Performance
+            * [ ] resource utilization
+                * [ ] Memory 
+                    * [ ] actually used memory
+                        * [ ] Per Process
+                            * [ ] RSS, **PSS** or USS, see the psutil [blogpost](http://grodola.blogspot.com/2016/02/psutil-4-real-process-memory-and-environ.html) - uss is slow
+                            * [ ] swap - may influence timing / longevity, etc.
+                        * [ ] per Host
+                            * [ ] virtual memory - used, **active** see [documentation](https://psutil.readthedocs.io/en/latest/#psutil.virtual_memory)
+                            * [ ] swap memory - used
+                * [x] CPU usage
+                    * [x] Per Process CPU_Percent is most relevant, can be bigger than 100 and can also be divided by num_cpus for windows-like behaviour, see [documentation](https://psutil.readthedocs.io/en/latest/#psutil.Process.cpu_percent)
+                    * [ ] Host cpu_percent - system-wide cpu utilization, see [documentation](https://psutil.readthedocs.io/en/latest/#psutil.cpu_times)
+                * [x] GPU
+                    * [x] Omit usage, because we do not target the GPU (yet), however the extension would be trivial
+                * [ ] Timing - on ROS topics
+                    * [ ] Bandwith utilization
+                    * [ ] Frequency - hard limit
+            * [ ] Capacity - how much can it access -  virtual memory
+                * [x] Memory
+                    * Process
+                        * [x] Virtual Memory - implemented by default
+                * [ ] Timing - on ROS topics
+                    * [ ] Bandwidth Limits - see documentation
+                        * [ ] Wifi / Ethernet
+                        * [ ] Serial
+                    * [ ] Frequency - hard limits
+        * Compatibility
+            * Co-Existence - free memory
+                * [ ] Host Memory
+                    * [ ] Available Memory [documentation](https://psutil.readthedocs.io/en/latest/#psutil.virtual_memory) - be careful here with overhead. Define what has been left out and what not - accessing PSS and USS is claimed to be expensive (leafing through memory paging)
+            * Interoperability - shared memory
+                * [ ] Host Memory
+                    * [ ] Shared - [documentation](https://psutil.readthedocs.io/en/latest/#psutil.virtual_memory)
 
 # Stuff from the original documentation
 
