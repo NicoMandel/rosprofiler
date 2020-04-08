@@ -76,6 +76,7 @@ Check with client.py whether the changes are the same noted down in there
 ## NICO Nice-to-Haves
 
 1. udp port usage, to see how much mavlink actually uses, check [this documentation](https://psutil.readthedocs.io/en/latest/#psutil.net_connections)
+2. Heat dissipation sensing, see [documentation](https://psutil.readthedocs.io/en/latest/#psutil.sensors_temperatures)
 
 # Stuff from the original documentation
 
