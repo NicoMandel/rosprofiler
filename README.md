@@ -73,6 +73,10 @@ Check with client.py whether the changes are the same noted down in there
                 * [ ] Host Memory
                     * [ ] Shared - [documentation](https://psutil.readthedocs.io/en/latest/#psutil.virtual_memory)
 
+- [ ] Implement the option to change the frequency of monitoring.
+    * [ ] [here](./scripts/rosprofilerNano#L52) using command line arguments 
+    * [ ] [here](./src/rosprofiler/profiler_Nano.py#L71) using ROS parameters
+
 ## NICO Nice-to-Haves
 
 1. udp port usage, to see how much mavlink actually uses, check [this documentation](https://psutil.readthedocs.io/en/latest/#psutil.net_connections)
