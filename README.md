@@ -73,6 +73,10 @@ Check with client.py whether the changes are the same noted down in there
                 * [ ] Host Memory
                     * [ ] Shared - [documentation](https://psutil.readthedocs.io/en/latest/#psutil.virtual_memory)
 
+## NICO Nice-to-Haves
+
+1. udp port usage, to see how much mavlink actually uses, check [this documentation](https://psutil.readthedocs.io/en/latest/#psutil.net_connections)
+
 # Stuff from the original documentation
 
 
