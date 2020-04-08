@@ -38,10 +38,10 @@ Check with client.py whether the changes are the same noted down in there
                     * [ ] actually used memory
                         * [ ] Per Process
                             * [ ] RSS, **PSS** or USS, see the psutil [blogpost](http://grodola.blogspot.com/2016/02/psutil-4-real-process-memory-and-environ.html) - uss is slow
-                            * [ ] swap - may influence timing / longevity, etc.
+                            * [] swap - may influence timing / longevity, etc.
                         * [ ] per Host
-                            * [ ] virtual memory - used, **active** see [documentation](https://psutil.readthedocs.io/en/latest/#psutil.virtual_memory)
-                            * [ ] swap memory - used
+                            * [x] virtual memory - **used**, active see [documentation](https://psutil.readthedocs.io/en/latest/#psutil.virtual_memory)
+                            * [x] swap memory - used
                 * [x] CPU usage
                     * [x] Per Process CPU_Percent is most relevant, can be bigger than 100 and can also be divided by num_cpus for windows-like behaviour, see [documentation](https://psutil.readthedocs.io/en/latest/#psutil.Process.cpu_percent)
                     * [x] Host cpu_percent - system-wide global utilization - not a list anymore - see [documentation](https://psutil.readthedocs.io/en/latest/#psutil.cpu_times)
@@ -51,10 +51,15 @@ Check with client.py whether the changes are the same noted down in there
                 * [ ] Timing - on ROS topics
                     * [ ] Bandwith utilization
                     * [ ] Frequency - hard limit
-            * [ ] Capacity - how much can it access -  virtual memory
+            * [ ] Capacity - how much can it access
+                * [x] CPU - can be calculated from the cpu_count and the Host CPU percent
                 * [x] Memory
-                    * Process
+                    * [x] Process
                         * [x] Virtual Memory - implemented by default
+                    * [ ] Host
+                        * [x] **MINIMUM** [available virtual memory](https://psutil.readthedocs.io/en/latest/#psutil.virtual_memory) - conservative measure. This excludes swap
+                        * [x] Swap in bytes 
+                            * [x] available
                 * [ ] Timing - on ROS topics
                     * [ ] Bandwidth Limits - see documentation
                         * [ ] Wifi / Ethernet

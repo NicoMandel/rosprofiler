@@ -33,6 +33,8 @@ class HostMonitor(object):
         self.cpu_load_log = list()
         self.phymem_used_log = list()
         self.phymem_avail_log = list()
+        self.swap_used_log = list()
+        self.swap_avail_log = list()
         self.start_time = rospy.get_rostime()
 
         # Section on defining the Nano filename
@@ -49,7 +51,9 @@ class HostMonitor(object):
         """ Record information about the cpu and memory usage for this host into a buffer """
         self.cpu_load_log.append(psutil.cpu_percent(interval=None, percpu=False))
         self.phymem_used_log.append(psutil.virtual_memory().used)
-        self.phymem_avail_log.append(psutil.virtual_memory().free)
+        self.phymem_avail_log.append(psutil.virtual_memory().available)
+        self.swap_avail_log.append(psutil.swap_memory().free)
+        self.swap_used_log.append(psutil.swap_memory().used)
 
     def get_statistics(self):
         """ Returns NanoStatistics() using buffered information.
@@ -88,6 +92,16 @@ class HostMonitor(object):
             statistics.phymem_avail_mean = np.mean(phymem_avail_log)
             statistics.phymem_avail_std = np.std(phymem_avail_log)
             statistics.phymem_avail_max = np.max(phymem_avail_log)
+        if len(self.swap_avail_log) > 0:
+            swap_avail_log = np.array(self.swap_avail_log)
+            statistics.swap_avail_mean = np.mean(swap_avail_log)
+            statistics.swap_avail_std = np.std(swap_avail_log)
+            statistics.swap_avail_min = np.min(swap_avail_log)
+        if len(self.swap_used_log) > 0: 
+            swap_used_log = np.array(self.swap_used_log)
+            statistics.swap_used_mean = np.mean(swap_used_log)
+            statistics.swap_used_std = np.std(swap_used_log)
+            statistics.swap_used_max = np.max(swap_used_log)
         return statistics
 
     def reset(self):
@@ -95,4 +109,6 @@ class HostMonitor(object):
         self.cpu_load_log = list()
         self.phymem_used_log = list()
         self.phymem_avail_log = list()
+        self.swap_used_log = list()
+        self.swap_avail_log = list()
         self.start_time = rospy.get_rostime()
