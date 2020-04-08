@@ -39,7 +39,7 @@ Check with client.py whether the changes are the same noted down in there
                         * [ ] Per Process
                             * [ ] RSS, **PSS** or USS, see the psutil [blogpost](http://grodola.blogspot.com/2016/02/psutil-4-real-process-memory-and-environ.html) - uss is slow
                             * [] swap - may influence timing / longevity, etc.
-                        * [ ] per Host
+                        * [x] per Host
                             * [x] virtual memory - **used**, active see [documentation](https://psutil.readthedocs.io/en/latest/#psutil.virtual_memory)
                             * [x] swap memory - used
                 * [x] CPU usage

@@ -91,7 +91,7 @@ class HostMonitor(object):
             phymem_avail_log = np.array(self.phymem_avail_log)
             statistics.phymem_avail_mean = np.mean(phymem_avail_log)
             statistics.phymem_avail_std = np.std(phymem_avail_log)
-            statistics.phymem_avail_max = np.max(phymem_avail_log)
+            statistics.phymem_avail_min = np.min(phymem_avail_log)
         if len(self.swap_avail_log) > 0:
             swap_avail_log = np.array(self.swap_avail_log)
             statistics.swap_avail_mean = np.mean(swap_avail_log)
