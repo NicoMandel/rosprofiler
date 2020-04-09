@@ -35,6 +35,7 @@ class HostMonitor(object):
         self.phymem_avail_log = list()
         self.swap_used_log = list()
         self.swap_avail_log = list()
+        self.phymem_shared_log = list()
         self.start_time = rospy.get_rostime()
 
         # Section on defining the Nano filename
@@ -50,10 +51,14 @@ class HostMonitor(object):
     def update(self):
         """ Record information about the cpu and memory usage for this host into a buffer """
         self.cpu_load_log.append(psutil.cpu_percent(interval=None, percpu=False))
-        self.phymem_used_log.append(psutil.virtual_memory().used)
-        self.phymem_avail_log.append(psutil.virtual_memory().available)
-        self.swap_avail_log.append(psutil.swap_memory().free)
-        self.swap_used_log.append(psutil.swap_memory().used)
+        virt_mem = psutil.virtual_memory()
+        self.phymem_used_log.append(virt_mem.used)
+        self.phymem_avail_log.append(virt_mem.available)
+        self.phymem_shared_log.append(virt_mem.shared)
+        swap = psutil.swap_memory()
+        self.swap_avail_log.append(swap.free)
+        self.swap_used_log.append(swap.used)
+
 
     def get_statistics(self):
         """ Returns NanoStatistics() using buffered information.
@@ -102,6 +107,11 @@ class HostMonitor(object):
             statistics.swap_used_mean = np.mean(swap_used_log)
             statistics.swap_used_std = np.std(swap_used_log)
             statistics.swap_used_max = np.max(swap_used_log)
+        if len(self.phymem_shared_log) > 0:
+            phymem_shared_log = np.array(self.phymem_shared_log)
+            statistics.phymem_shared_mean = np.mean(phymem_shared_log)
+            statistics.phymem_shared_std = np.mean(phymem_shared_log)
+            statistics.phymem_shared_max = np.mean(phymem_shared_log)
         return statistics
 
     def reset(self):
