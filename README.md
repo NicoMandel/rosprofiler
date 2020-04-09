@@ -38,7 +38,7 @@ Check with client.py whether the changes are the same noted down in there
                     * [ ] actually used memory
                         * [ ] Per Process
                             * [ ] RSS, **PSS** or USS, see the psutil [blogpost](http://grodola.blogspot.com/2016/02/psutil-4-real-process-memory-and-environ.html) - uss is slow
-                            * [] swap - may influence timing / longevity, etc.
+                            * [ ] swap - may influence timing / longevity, etc.
                         * [x] per Host
                             * [x] virtual memory - **used**, active see [documentation](https://psutil.readthedocs.io/en/latest/#psutil.virtual_memory)
                             * [x] swap memory - used
@@ -51,25 +51,25 @@ Check with client.py whether the changes are the same noted down in there
                 * [ ] Timing - on ROS topics
                     * [ ] Bandwith utilization
                     * [ ] Frequency - hard limit
-            * [ ] Capacity - how much can it access
+            * [x] Capacity - how much can it access
                 * [x] CPU - can be calculated from the cpu_count and the Host CPU percent
                 * [x] Memory
                     * [x] Process
                         * [x] Virtual Memory - implemented by default
-                    * [ ] Host
+                    * [x] Host
                         * [x] **MINIMUM** [available virtual memory](https://psutil.readthedocs.io/en/latest/#psutil.virtual_memory) - conservative measure. This excludes swap
                         * [x] Swap in bytes 
                             * [x] available
                 * [ ] Timing - on ROS topics
                     * [ ] Bandwidth Limits - see documentation
                         * [ ] Wifi / Ethernet
-                        * [ ] Serial
+                        * [ ] Serial, see below
                     * [ ] Frequency - hard limits
         * Compatibility
-            * Co-Existence - free memory
-                * [ ] Host Memory
-                    * [ ] Available Memory [documentation](https://psutil.readthedocs.io/en/latest/#psutil.virtual_memory) - be careful here with overhead. Define what has been left out and what not - accessing PSS and USS is claimed to be expensive (leafing through memory paging)
-            * Interoperability - shared memory
+            * [x] Co-Existence - free memory
+                * [x] Host Memory
+                    * [x] Available Memory [documentation](https://psutil.readthedocs.io/en/latest/#psutil.virtual_memory) - be careful here with overhead. Define what has been left out and what not - accessing PSS and USS is claimed to be expensive (leafing through memory paging)
+            * [ ] Interoperability - shared memory - **NOT** - left out
                 * [ ] Host Memory
                     * [ ] Shared - [documentation](https://psutil.readthedocs.io/en/latest/#psutil.virtual_memory)
 
@@ -80,6 +80,7 @@ Check with client.py whether the changes are the same noted down in there
 ## NICO Nice-to-Haves
 
 1. udp port usage, to see how much mavlink actually uses, check [this documentation](https://psutil.readthedocs.io/en/latest/#psutil.net_connections)
+    * ` For example 9600 8 N 1 uses 10 bits per word (1 start bit, 8 data bits, and 1 stop bit). Each word would take 10/9600 = 1041.66666666 microsecs.` - to monitor whether we get channel overload on the udp port
 2. Heat dissipation sensing, see [documentation](https://psutil.readthedocs.io/en/latest/#psutil.sensors_temperatures)
 
 # Stuff from the original documentation
