@@ -1,0 +1,11 @@
+# these are the things that our rosprofile client will read and determine what it will inspect
+hosts:
+    - "nano-wired"
+
+nodes: 
+    - "/talker"
+    - "/listener"
+
+topics:
+    - "chatter_loopback"
+    - "chatter"

@@ -28,7 +28,7 @@ Check with client.py whether the changes are the same noted down in there
     - [x] Bw and HZ from online documentation. Check issuelog
     - [x] Get power values consumption - **For the Raspberry: Use the maximum Power consumption (which is likely limited by the USB) and multiply it with the CPU load as a proxy - arguing that heat dissipation will be the major determining factor, with equal r/w access**
     - [x] Put power monitoring into message and send over
-    - [ ] Put different memory values into classes, s.a.
+    - [x] Put different memory values into classes, s.a.
 - [x] Adapt the code to use the new msg type monitoring power and new memory values
 - [ ] Check with ISO what is required/ what we can and want to use
     * We want to look at the following values:
@@ -76,11 +76,18 @@ Check with client.py whether the changes are the same noted down in there
 
 - [ ] Implement the option to change the frequency of monitoring.
     * [ ] [here](./scripts/rosprofilerNano#L52) using command line arguments 
-    * [ ] [here](./src/rosprofiler/profiler_Nano.py#L71) using ROS parameters
+    * [x] [here](./src/rosprofiler/profiler_Nano.py#L71) using ROS parameters
+    * [ ] for the [timing](./src/timing.py#L13) Script
 
-- [ ] Implement the option to only monitor certain nodes:
+- [x] Implement the option to only monitor certain nodes:
     - [ ] change [this](./src/rosprofiler/profiler_Nano.py#L135) to be a function
-    - [ ] change [this](./src/rosprofiler/profiler_Nano.py#L94) to accept the rosparams set by the .config file in the `beginner_tutorials` package
+    - [x] change [this](./src/rosprofiler/profiler_Nano.py#L94) to accept the rosparams set by the .config file in the `beginner_tutorials` package
+
+- [ ] Change the fields the client accepts and
+     * [ ] Host Statistics Nano, see [here]
+     * [ ] Node Statistics Nano, see [here]
+- [ ] Launch file for starting timing logging together with client logging
+
 
 ## NICO Nice-to-Haves
 

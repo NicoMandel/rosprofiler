@@ -68,8 +68,7 @@ def get_sys_hostname():
 class Profiler(object):
     """ """
     def __init__(self, sample_rate=None, update_rate=None):
-        self.sample_rate = sample_rate or rospy.Duration(0.1)
-        self.update_rate = update_rate or rospy.Duration(2)
+
 
         # Generate a ROS compatible node name using the following options.
         # Preference Order: 1) ROS_HOSTNAME, 2) ROS_IP w/ underscores (10_0_0_5)
@@ -91,7 +90,17 @@ class Profiler(object):
         self._host_publisher = rospy.Publisher('host_statistics', NanoStatistics, queue_size=10)
 
         # Processes we are watching
+        self.nodelist = rospy.get_param("/nodes", default=None)
+        if self.nodelist is None:
+            rospy.logwarn("No nodes specified. Looking for All Nodes on the host")
+            self.nodelist = rosnode.get_nodes_by_machine(rosgraph.network.get_host_name()) #very expensive lookup 
         self._nodes = dict()
+
+        # Timers Rates
+        sample_rate = rospy.get_param("/sampleRate", default=0.2)
+        self.sample_rate = rospy.Duration(sample_rate)
+        update_rate = rospy.get_param("/updateRate", default=2)
+        self.update_rate = rospy.Duration(update_rate)
 
     def start(self):
         """ Starts the Profiler
@@ -128,7 +137,9 @@ class Profiler(object):
 
     def _update_node_list(self, event=None):
         """ Contacts the master using xmlrpc to determine what processes to watch """
-        nodenames = rosnode.get_nodes_by_machine(rosgraph.network.get_host_name())
+        nodenames = rosnode.get_nodes_by_machine(rosgraph.network.get_host_name()) # very expensive lookup btw
+        if len(nodenames) != len(self.nodelist):
+            nodenames = [name for name in nodenames if name in item for item in self.nodelist]
         # Lock data structures while making changes
         with self._lock:
             # Remove Node monitors for processes that no longer exist
