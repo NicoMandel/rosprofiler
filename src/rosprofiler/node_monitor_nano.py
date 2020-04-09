@@ -18,7 +18,7 @@ import psutil
 import rosgraph
 import rospy
 
-from ros_statistics_msgs.msg import NodeStatistics
+from ros_statistics_msgs.msg import NodeStatisticsNano
 
 
 class NodeMonitor(object):
@@ -66,11 +66,11 @@ class NodeMonitor(object):
             self._process_ok = False
 
     def get_statistics(self):
-        """ Returns NodeStatistics() using information stored in the buffer.
+        """ Returns NodeStatisticsNano() using information stored in the buffer.
         :returns: statistics information collected about the process
-        :rtype: NodeStatistics
+        :rtype: NodeStatisticsNano
         """
-        statistics = NodeStatistics()
+        statistics = NodeStatisticsNano()
         statistics.node = self.node
         statistics.host = self.hostname
         statistics.uri = self.uri

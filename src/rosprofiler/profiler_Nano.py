@@ -30,11 +30,11 @@ import rosgraph
 import rosnode
 from rosgraph.names import is_legal_name
 
-from ros_statistics_msgs.msg import NodeStatistics
+from ros_statistics_msgs.msg import NodeStatisticsNano
 from ros_statistics_msgs.msg import NanoStatistics
 
 from host_monitor_nano import HostMonitor
-from node_monitor import NodeMonitor
+from node_monitor_nano import NodeMonitor
 
 
 def get_ros_hostname():
@@ -87,7 +87,7 @@ class Profiler(object):
         # Data Structure for collecting information about the host
         self._host_monitor = HostMonitor()
 
-        self._node_publisher = rospy.Publisher('node_statistics', NodeStatistics, queue_size=10)
+        self._node_publisher = rospy.Publisher('node_statistics', NodeStatisticsNano, queue_size=10)
         self._host_publisher = rospy.Publisher('host_statistics', NanoStatistics, queue_size=10)
 
         # Processes we are watching
