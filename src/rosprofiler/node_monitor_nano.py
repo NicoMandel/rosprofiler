@@ -38,7 +38,8 @@ class NodeMonitor(object):
 
         self.cpu_log = list()
         self.virt_log = list()
-        self.res_log = list()
+        self.pss_log = list()
+        self.swap_log = list()
         self.num_threads = 0
         self.start_time = rospy.get_rostime()
 
@@ -53,12 +54,11 @@ class NodeMonitor(object):
     def update(self):
         """ Record cpu and memory information about this procress into a buffer """
         try:
-            self.cpu_log.append(self._process.cpu_percent(interval=0))
-            mem_info = self._process.memory_info()  # Changed according to https://psutil.readthedocs.io/en/latest/
-            real = mem_info.rss
-            virt = mem_info.vms
-            self.virt_log.append(virt)
-            self.res_log.append(real)
+            self.cpu_log.append(self._process.cpu_percent(interval=0.0))
+            mem_info = self._process.memory_full_info()  # Changed according to https://psutil.readthedocs.io/en/latest/
+            self.virt_log.append(mem_info.vms)
+            self.pss_log.append(mem_info.pss)
+            self.swap_log.append(mem_info.swap)
             self.num_threads = max(self.num_threads, self._process.num_threads())
         except psutil.NoSuchProcess:
             rospy.logwarn("Lost Node Monitor for '%s'" % self.node)
@@ -90,17 +90,23 @@ class NodeMonitor(object):
             statistics.virt_mem_mean = np.mean(virt_log)
             statistics.virt_mem_std = np.std(virt_log)
             statistics.virt_mem_max = np.max(virt_log)
-        if len(self.res_log) > 0:
-            res_log = np.array(self.res_log)
-            statistics.real_mem_mean = np.mean(res_log)
-            statistics.real_mem_std = np.std(res_log)
-            statistics.real_mem_max = np.max(res_log)
+        if len(self.pss_log) > 0:
+            pss_log = np.array(self.pss_log)
+            statistics.pss_mean = np.mean(pss_log)
+            statistics.pss_std = np.std(pss_log)
+            statistics.pss_max = np.max(pss_log)
+        if len(self.swap_log) > 0:
+            swap_log = np.array(self.swap_log)
+            statistics.swap_mean = np.mean(swap_log)
+            statistics.swap_std = np.std(swap_log)
+            statistics.swap_max = np.max(swap_log)
         return statistics
 
     def reset(self):
         """ Clears the statistics information stored in the buffer """
         self.cpu_log = list()
         self.virt_log = list()
-        self.res_log = list()
+        self.swap_log = list()
+        self.pss_log = list()
         self.num_threads = 0
         self.start_time = rospy.get_rostime()

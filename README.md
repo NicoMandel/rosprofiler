@@ -34,11 +34,12 @@ Check with client.py whether the changes are the same noted down in there
     * We want to look at the following values:
         * Performance
             * [ ] resource utilization
-                * [ ] Memory 
-                    * [ ] actually used memory
-                        * [ ] Per Process
-                            * [ ] RSS, **PSS** or USS, see the psutil [blogpost](http://grodola.blogspot.com/2016/02/psutil-4-real-process-memory-and-environ.html) - uss is slow
-                            * [ ] swap - may influence timing / longevity, etc.
+                * [x] Memory 
+                    * [x] actually used memory
+                        * [x] Per Process
+                            * [x] RSS, **PSS** or USS, see the psutil [blogpost](http://grodola.blogspot.com/2016/02/psutil-4-real-process-memory-and-environ.html) - uss is slow
+                            * [x] swap - may influence timing / longevity, etc.
+                            * [x] virtual memory - how much is assigned
                         * [x] per Host
                             * [x] virtual memory - **used**, active see [documentation](https://psutil.readthedocs.io/en/latest/#psutil.virtual_memory)
                             * [x] swap memory - used
@@ -55,7 +56,7 @@ Check with client.py whether the changes are the same noted down in there
                 * [x] CPU - can be calculated from the cpu_count and the Host CPU percent
                 * [x] Memory
                     * [x] Process
-                        * [x] Virtual Memory - implemented by default
+                        * [x] **NONE** process has VM available, which is also a used resource
                     * [x] Host
                         * [x] **MINIMUM** [available virtual memory](https://psutil.readthedocs.io/en/latest/#psutil.virtual_memory) - conservative measure. This excludes swap
                         * [x] Swap in bytes 
@@ -69,7 +70,7 @@ Check with client.py whether the changes are the same noted down in there
             * [x] Co-Existence - free memory
                 * [x] Host Memory
                     * [x] Available Memory [documentation](https://psutil.readthedocs.io/en/latest/#psutil.virtual_memory) - be careful here with overhead. Define what has been left out and what not - accessing PSS and USS is claimed to be expensive (leafing through memory paging)
-            * [ ] Interoperability - shared memory - **NOT** - left out
+            * [ ] **NONE** Interoperability - shared memory - **NOT** - left out
                 * [ ] Host Memory
                     * [ ] Shared - [documentation](https://psutil.readthedocs.io/en/latest/#psutil.virtual_memory)
 
