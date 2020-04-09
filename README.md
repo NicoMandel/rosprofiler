@@ -70,9 +70,9 @@ Check with client.py whether the changes are the same noted down in there
             * [x] Co-Existence - free memory
                 * [x] Host Memory
                     * [x] Available Memory [documentation](https://psutil.readthedocs.io/en/latest/#psutil.virtual_memory) - be careful here with overhead. Define what has been left out and what not - accessing PSS and USS is claimed to be expensive (leafing through memory paging)
-            * [ ] **NONE** Interoperability - shared memory - **NOT** - left out
-                * [ ] Host Memory
-                    * [ ] Shared - [documentation](https://psutil.readthedocs.io/en/latest/#psutil.virtual_memory)
+            * [x] Interoperability - shared memory - **NOT** - left out
+                * [x] Host Memory
+                    * [x] Shared - [documentation](https://psutil.readthedocs.io/en/latest/#psutil.virtual_memory)
 
 - [ ] Implement the option to change the frequency of monitoring.
     * [ ] [here](./scripts/rosprofilerNano#L52) using command line arguments 
