@@ -78,6 +78,10 @@ Check with client.py whether the changes are the same noted down in there
     * [ ] [here](./scripts/rosprofilerNano#L52) using command line arguments 
     * [ ] [here](./src/rosprofiler/profiler_Nano.py#L71) using ROS parameters
 
+- [ ] Implement the option to only monitor certain nodes:
+    - [ ] change [this](./src/rosprofiler/profiler_Nano.py#L135) to be a function
+    - [ ] change [this](./src/rosprofiler/profiler_Nano.py#L94) to accept the rosparams set by the .config file in the `beginner_tutorials` package
+
 ## NICO Nice-to-Haves
 
 1. udp port usage, to see how much mavlink actually uses, check [this documentation](https://psutil.readthedocs.io/en/latest/#psutil.net_connections)
