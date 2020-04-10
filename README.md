@@ -14,11 +14,11 @@ rosprofiler
 Check with client.py whether the changes are the same noted down in there
 - [x] Units for the memory management need to be converted, see this [stackoverflow](https://stackoverflow.com/questions/21792655/psutil-virtual-memory-units-of-measurement)
 - [x] Check the sample rates and intervals - do the values get reset each sample - yes, see [profiler.py, l. 176](./src/rosprofiler/profiler.py#L176)
-- [ ] Check the [psutil memory documentation](https://psutil.readthedocs.io/en/latest/#psutil.Process.memory_full_info) if we can get more conclusive values. Also check [this stackoverflow](https://stackoverflow.com/questions/7880784/what-is-rss-and-vsz-in-linux-memory-management) for what the differences between RSS, VMS and pss are
+- [x] Check the [psutil memory documentation](https://psutil.readthedocs.io/en/latest/#psutil.Process.memory_full_info) if we can get more conclusive values. Also check [this stackoverflow](https://stackoverflow.com/questions/7880784/what-is-rss-and-vsz-in-linux-memory-management) for what the differences between RSS, VMS and pss are
     * [ ] Which one do we use? Depends on ISO 25023 and 25010
-        * [ ] one to show the free space - for capacity
-        * [ ] for the host_statistics definitely want one that will show the total used space
-        * [ ] for the node_statistics want one that will show the allocated __and__ used space
+        * [x] one to show the free space - for capacity
+        * [x] for the host_statistics definitely want one that will show the total used space
+        * [x] for the node_statistics want one that will show the allocated __and__ used space
 - [x] The cpu_percent part of the [node_statistics, L. 56](./src/rosprofiler/node_monitor.py#L56) may be very misleading - check these and find if there is maybe an absolute value we can use - or if we have to rely on the host_statistics value to then calculate the total usage
 - [ ] Run a test example with the topic and BW timer 
 
@@ -80,12 +80,12 @@ Check with client.py whether the changes are the same noted down in there
     * [ ] for the [timing](./src/timing.py#L13) Script
 
 - [x] Implement the option to only monitor certain nodes:
-    - [ ] change [this](./src/rosprofiler/profiler_Nano.py#L135) to be a function
-    - [x] change [this](./src/rosprofiler/profiler_Nano.py#L94) to accept the rosparams set by the .config file in the `beginner_tutorials` package
+    - [x] change [this](./src/rosprofiler/profiler_Nano.py#L94) to accept the rosparams set by the .config file in the `rosprofiler` package
 
 - [ ] Change the fields the client accepts and
-     * [ ] Host Statistics Nano, see [here]
-     * [ ] Node Statistics Nano, see [here]
+     * [ ] Host Statistics Nano, see [here](./src/client.py#L49) and [here](./src/client.py#L48)
+     * [ ] Node Statistics Nano, see [here](./src/client.py#L75) and [here](./src/client.py#L61)
+     * [ ] which nodes to log is double covered, see [here](./src/client.py#L) and [here](./src/rosprofiler/profiler_Nano.py#L142)
 - [ ] Launch file for starting timing logging together with client logging
 
 

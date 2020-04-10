@@ -9,3 +9,6 @@ nodes:
 topics:
     - "chatter_loopback"
     - "chatter"
+
+sampleRate: 0.2
+updateRate: 2

@@ -1,26 +1,5 @@
 #!/usr/bin/env python3
 
-""" 
-TODO:
-    1. Check what the bloody rosprofiler actually records - averages, times, whatever
-        1. Check the units. Here: https://stackoverflow.com/questions/21792655/psutil-virtual-memory-units-of-measurement
-        2. Check at which intervals / timeframes it samples and deletes / resets
-        3. Check what the Memory units are - documented here: https://psutil.readthedocs.io/en/latest/#psutil.Process.memory_full_info
-    2. Create a toy example with the listener / talker that we wrote
-    3. record a toy example with time information
-    4. extend the class with:
-        1. bw and hz from the documentation I found online. List which Topics this should be done for
-        2. for the Jetson Nano: get the values for the Power consumption
-    5. Put the values into relation with the ISO standard and what they need
-
-    TODO: Convert the cpu_load msgs, they are arrays
-
-
-HINTS:  ROSNODE API to find lists and machines and nodes
-http://docs.ros.org/hydro/api/rosnode/html/
-"""
-
-
 import rospy
 from ros_statistics_msgs.msg import HostStatistics, NodeStatistics
 import socket
@@ -31,10 +10,11 @@ import rosnode
 
 class ProfileClient:
 
-    def __init__(self, fname="default"):
+    def __init__(self):
         """ A client class on the rosprofiler topic msgs"""
 
-        # Get parameters from server to find out which files to track
+        self.filename = rospy.get_param("filename", default="default")
+        # Get parameters from server to find out what to track and where to write it
         hosts = rospy.get_param('/hosts', default=None)
         self.nodes = rospy.get_param('/nodes', default=None)
         if hosts is None:
@@ -67,7 +47,6 @@ class ProfileClient:
         
         # Waiting for the topic to get going and setting up shutdown function
         rospy.wait_for_message("/host_statistics", HostStatistics)
-        self.filename = fname
         rospy.on_shutdown(self.writeToFile)
 
         # Subscribers last - to not mess up when messages come in before everything is set up
@@ -162,7 +141,7 @@ if __name__=="__main__":
     try:
         rospy.init_node("rosprofiler_client")
         cl = ProfileClient()
-    except rospy.ROSException as e:
+    except rospy.ROSInitException as e:
         rospy.logerr(e)
     
     try:

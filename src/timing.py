@@ -68,7 +68,7 @@ class LoggerList:
 
     def __init__(self, list_of_topics, filename="topics"):
         """ A Loggerlist object, which wraps many timing loggers. This also implements the writetoFile Funciton """
-        self.filename = filename
+        self.filename = rospy.get_param("filename", default="default")
         self.metrics = ["Time", "HZ_Samples", "HZ_Mean", "HZ_Max_Delta", "HZ_Min_Delta", "HZ_Std Dev_Delta", "BW_Samples", "BW_Bytes / sec", "BW_Mean", "BW_Max", "BW_Min"]
         self.loglist = []
         for topic in list_of_topics:
@@ -82,7 +82,7 @@ class LoggerList:
             Function to be called on shutdown. Stops timer and writes data to a file
         """
         parentDir = os.path.dirname(__file__)
-        fname = os.path.abspath(os.path.join(parentDir, '..','results',self.filename+'.xlsx'))
+        fname = os.path.abspath(os.path.join(parentDir, '..','results',self.filename+'_timing.xlsx'))
         with pd.ExcelWriter(fname) as writer:
             rospy.loginfo("Writing results to file: {}".format(fname))
             for topic in self.loglist:
@@ -92,17 +92,19 @@ class LoggerList:
 
 
 if __name__=="__main__":
-    rospy.init_node("Freq_logger")
-    topics = rospy.get_param("/topics", default=None)
-    if topics is None:
-        rospy.logwarn("No topics specified. Looking for All topics")
-        topics = rostopic.get_topic_list()
+    try:
+        rospy.init_node("Freq_logger")
+        topics = rospy.get_param("/topics", default=None)
+        if topics is None:
+            rospy.logwarn("No topics specified. Looking for All topics")
+            topics = rostopic.get_topic_list()
 
-    # use the wrapper list holding object
-    LL = LoggerList(topics)
+        # use the wrapper list holding object
+        LL = LoggerList(topics)
+    except rospy.ROSInitException as e:
+        rospy.logerr(e)
 
-    while not rospy.is_shutdown():
-        try:
-            rospy.spin()
-        except rospy.ROSInterruptException as e:
-            rospy.logerr_once(e)
+    try:
+        rospy.spin()
+    except rospy.ROSInterruptException as e:
+        rospy.logerr_once(e)
