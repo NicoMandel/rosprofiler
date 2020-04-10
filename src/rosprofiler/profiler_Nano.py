@@ -85,7 +85,7 @@ class Profiler(object):
         self._graphupdate_timer = None
 
         # Data Structure for collecting information about the host
-        host_dict = rospy.get_param("hosts", default=None)
+        host_dict = rospy.get_param('hosts', default=None)
         if not host_dict:
             raise rospy.ROSInitException("Nothing to log specified")
         else:

@@ -37,7 +37,7 @@ class ProfileClient:
 
         # Assign a Dataframe to each host 
         self.host_df_dict = {}
-        for host in host_dict.keys():
+        for host in self.host_dict.keys():
             self.host_df_dict[host] = host_df.copy(deep=True)
         
         # Setup work for the Nodes
