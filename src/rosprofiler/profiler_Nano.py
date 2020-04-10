@@ -89,10 +89,6 @@ class Profiler(object):
             raise rospy.ROSInitException("Nothing to log specified")
         else:
            self._local_ip = rosgraph.network.get_local_address()
-        
-        # Debug throw-in:
-        for key, value in host_dict.items():
-            rospy.logwarn("Logging Host: {} \t Nodes: {}".format(key,value))
 
         if self._local_ip in host_dict.keys():
             self._host_monitor = HostMonitor()

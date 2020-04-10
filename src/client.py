@@ -25,9 +25,9 @@ class ProfileClient:
                 self.host_dict[host] = rosnode.get_nodes_by_machine(host)                
 
         # Setup work for the hosts
-        self.extracted_statistics_host = ["Time", "Duration", "Samples", "CPU Count", "Power"
-        "CPU Load mean", "CPU Load max", "CPU Load std"
-        "Used Memory mean", "Used Memory max", "Used Memory std"
+        self.extracted_statistics_host = ["Time", "Duration", "Samples", "CPU Count", "Power",
+        "CPU Load mean", "CPU Load max", "CPU Load std",
+        "Used Memory mean", "Used Memory max", "Used Memory std",
         "Available Memory mean", "Available Memory min", "Available Memory std", 
         "Shared Memory mean", "Shared Memory std", "Shared Memory max",
         "Swap Available mean", "Swap Available std", "Swap Available min",
@@ -41,9 +41,9 @@ class ProfileClient:
             self.host_df_dict[host] = host_df.copy(deep=True)
         
         # Setup work for the Nodes
-        self.extracted_statistics_node = ["Time", "Duration", "Samples", "CPU Count"
-        "Threads", "CPU Load mean", "CPU Load max", "CPU Load std"
-        "PSS mean", "PSS std", "PSS max"
+        self.extracted_statistics_node = ["Time", "Duration", "Samples", "CPU Count",
+        "Threads", "CPU Load mean", "CPU Load max", "CPU Load std",
+        "PSS mean", "PSS std", "PSS max",
         "Swap Used mean", "Swap Used std", "Swap Used max",
         "Virtual Memory mean", "Virtual Memory std", "Virtual Memory max"
         ]
@@ -108,8 +108,8 @@ class ProfileClient:
             temp_df.at[t, "Available Memory min"] = (int(pd.np.floor(msg.phymem_avail_min)) >> 20)
             temp_df.at[t, "Available Memory std"] = (int(pd.np.floor(msg.phymem_avail_std)) >> 20) # TODO: KBs?
             temp_df.at[t, "Shared Memory mean"] = (int(pd.np.floor(msg.phymem_shared_mean)) >> 20)
-            temp_df.at[t, "Shared Memory mean"] = (int(pd.np.floor(msg.phymem_shared_std)) >> 20)
-            temp_df.at[t, "Shared Memory mean"] = (int(pd.np.floor(msg.phymem_shared_max)) >> 20)
+            temp_df.at[t, "Shared Memory std"] = (int(pd.np.floor(msg.phymem_shared_std)) >> 20)
+            temp_df.at[t, "Shared Memory max"] = (int(pd.np.floor(msg.phymem_shared_max)) >> 20)
 
             # Memory statistics - Swap - used and available
             temp_df.at[t, "Swap Used mean"] = (int(pd.np.floor(msg.swap_used_mean)) >> 20)
@@ -167,7 +167,7 @@ class ProfileClient:
 
 
     # Helper functions        
-    concat_df = staticmethod(lambda full_df, temp_df: pd.concat([full_df, temp_df]))
+    concat_df = staticmethod(lambda full_df, temp_df: pd.concat([full_df, temp_df], sort=False))
 
     def writeToFile(self):
         """
