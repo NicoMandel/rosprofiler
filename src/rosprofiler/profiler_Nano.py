@@ -24,6 +24,7 @@ import os
 import re
 import threading
 import xmlrpclib
+import socket
 
 import rospy
 import rosgraph
@@ -84,23 +85,35 @@ class Profiler(object):
         self._graphupdate_timer = None
 
         # Data Structure for collecting information about the host
-        self._host_monitor = HostMonitor()
+        host_dict = rospy.get_param("hosts", default=None)
+        if not host_dict:
+            raise rospy.ROSInitException("Nothing to log specified")
+        else:
+            try:
+                own_ip = socket.gethostbyname(socket.gethostname())
+            except OSError:
+                raise rospy.ROSInitException("Unable to get own IP Adress")
 
-        self._node_publisher = rospy.Publisher('node_statistics', NodeStatisticsNano, queue_size=10)
-        self._host_publisher = rospy.Publisher('host_statistics', NanoStatistics, queue_size=10)
+        if own_ip in host_dict.keys():
+            self._host_monitor = HostMonitor()
 
-        # Processes we are watching
-        self.nodelist = rospy.get_param("nodes", default=None)
-        if self.nodelist is None:
-            rospy.logwarn("No nodes specified. Looking for All Nodes on the host")
-            self.nodelist = rosnode.get_nodes_by_machine(rosgraph.network.get_host_name()) #very expensive lookup 
-        self._nodes = dict()
+            self._node_publisher = rospy.Publisher('node_statistics', NodeStatisticsNano, queue_size=10)
+            self._host_publisher = rospy.Publisher('host_statistics', NanoStatistics, queue_size=10)
 
-        # Timers Rates
-        sample_rate = rospy.get_param("sampleRate", default=0.2)
-        self.sample_rate = rospy.Duration(sample_rate)
-        update_rate = rospy.get_param("updateRate", default=2)
-        self.update_rate = rospy.Duration(update_rate)
+            # Processes we are watching
+            self.nodelist = host_dict[own_ip]
+            if not self.nodelist:
+                rospy.logwarn("No nodes specified. Looking for All Nodes on the host")
+                self.nodelist = rosnode.get_nodes_by_machine(rosgraph.network.get_host_name()) #very expensive lookup 
+            self._nodes = dict()
+
+            # Timers Rates
+            sample_rate = rospy.get_param("sampleRate", default=0.2)
+            self.sample_rate = rospy.Duration(sample_rate)
+            update_rate = rospy.get_param("updateRate", default=2)
+            self.update_rate = rospy.Duration(update_rate)
+        else:
+            raise rospy.ROSInitException("Own IP not in host_dict. Aborting and closing node")
 
     def start(self):
         """ Starts the Profiler

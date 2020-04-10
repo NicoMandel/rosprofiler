@@ -49,13 +49,13 @@ def install_thread_excepthook():
 if __name__ == '__main__':
     install_thread_excepthook()
 
-    profiler = Profiler()
     try:
+        profiler = Profiler()
         profiler.start()
         rospy.spin()
     except rospy.ROSInitException as e:
         rospy.logerr("{0}".format(e))
-        rospy.signal_shutdown("{0}".format(e))
+        rospy.signal_shutdown("{0}".format(e))      #not sure whether this works - since in the init_node it is not overriden
     except rospy.ROSInterruptException:
         pass
     finally:

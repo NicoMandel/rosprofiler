@@ -93,7 +93,7 @@ Check with client.py whether the changes are the same noted down in there
     - [ ] command line argument with [this syntax](./launch/nano_profiler.launch#L13)
     - [ ] workaround inside the client, by looking for a combination of "nan" and "prof" in all the node name list? see [here](./src/rosprofiler/host_monitor_nano.py#L43) and [here](./src/client.py#L24) for reference
 
-
+trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.py#L15@d05115ea722b46f9e84e259117c3ed09fc327460)
 ## NICO Nice-to-Haves
 
 1. udp port usage, to see how much mavlink actually uses, check [this documentation](https://psutil.readthedocs.io/en/latest/#psutil.net_connections)
