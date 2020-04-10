@@ -50,9 +50,10 @@ class ProfileClient:
 
         node_df = pd.DataFrame(columns=self.extracted_statistics_node).set_index("Time")
         self.node_df_dict= {}
-        for key, value in host_dict.items():
-            idx = str(key+"_"+value)
-            self.node_df_dict[idx] = node_df.copy(deep=True)
+        for key, values in self.host_dict.items():
+            for value in values:
+                idx = str(key+"_"+value)
+                self.node_df_dict[idx] = node_df.copy(deep=True)
         
         
         # Waiting for the topic to get going and setting up shutdown function
@@ -194,7 +195,7 @@ if __name__=="__main__":
     try:
         rospy.init_node("rosprofiler_client")
         cl = ProfileClient()
-    except rospy.ROSInitException as e:
+    except rospy.ROSException as e:
         rospy.logerr(e)
     
     try:

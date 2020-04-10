@@ -90,9 +90,15 @@ class Profiler(object):
             raise rospy.ROSInitException("Nothing to log specified")
         else:
             try:
-                own_ip = socket.gethostbyname(socket.gethostname())
+                hname = socket.getfqdn()
+                own_ip = socket.gethostbyname(hname)
+                rospy.logwarn("IP_adress for {} is {}".format(hname, own_ip))
             except OSError:
                 raise rospy.ROSInitException("Unable to get own IP Adress")
+        
+        # Debug throw-in:
+        for key, value in host_dict.items():
+            rospy.logwarn("Logging Hostname: {} \t Nodes: {}".format(key,value))
 
         if own_ip in host_dict.keys():
             self._host_monitor = HostMonitor()
@@ -152,7 +158,7 @@ class Profiler(object):
         """ Contacts the master using xmlrpc to determine what processes to watch """
         nodenames = rosnode.get_nodes_by_machine(rosgraph.network.get_host_name()) # very expensive lookup btw
         if len(nodenames) != len(self.nodelist):
-            nodenames = [name for name in nodenames if name in item for item in self.nodelist]
+            nodenames = [name for name in nodenames for item in self.nodelist if item in name]
         # Lock data structures while making changes
         with self._lock:
             # Remove Node monitors for processes that no longer exist
