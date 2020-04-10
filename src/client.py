@@ -15,15 +15,14 @@ class ProfileClient:
 
         self.filename = rospy.get_param('filename', default="default")
         # Get parameters from server to find out what to track and where to write it
-        hosts = rospy.get_param('hosts', default=None)
-        self.nodes = rospy.get_param('nodes', default=None)
-        if hosts is None:
-            rospy.logwarn("No Machines specified. Logging All")
+        self.host_dict = rospy.get_param('hosts', default=None)
+        
+        if self.host_dict is None:
+            self.host_dict = {}
+            rospy.logwarn("No Machines specified. Logging all nodes on all machines")
             hosts = rosnode.get_machines_by_nodes()
-
-        if self.nodes is None:
-            rospy.logwarn("No Nodes specified. Logging All")
-            self.nodes = rosnode.get_node_names()
+            for host in hosts:
+                self.host_dict[host] = rosnode.get_nodes_by_machine(host)                
 
         # Setup work for the hosts
         self.extracted_statistics_host = ["Time", "Duration", "Samples", "CPU Count", "Power"
@@ -37,12 +36,9 @@ class ProfileClient:
         host_df = pd.DataFrame(columns=self.extracted_statistics_host).set_index("Time")
 
         # Assign a Dataframe to each host 
-        self.ips = []
         self.host_df_dict = {}
-        for host in hosts:
-            ip = socket.gethostbyname(host)
-            self.ips.append(ip)
-            self.host_df_dict[ip] = host_df.copy(deep=True)
+        for host in host_dict.keys():
+            self.host_df_dict[host] = host_df.copy(deep=True)
         
         # Setup work for the Nodes
         self.extracted_statistics_node = ["Time", "Duration", "Samples", "CPU Count"
@@ -54,8 +50,9 @@ class ProfileClient:
 
         node_df = pd.DataFrame(columns=self.extracted_statistics_node).set_index("Time")
         self.node_df_dict= {}
-        for node in self.nodes:
-            self.node_df_dict[node] = node_df.copy(deep=True)
+        for key, value in host_dict.items():
+            idx = str(key+"_"+value)
+            self.node_df_dict[idx] = node_df.copy(deep=True)
         
         
         # Waiting for the topic to get going and setting up shutdown function
@@ -84,7 +81,7 @@ class ProfileClient:
             swap_available: mean, std, min
         """
 
-        if msg.ipaddress in self.ips:
+        if msg.ipaddress in self.host_dict.keys():
             temp_df = pd.DataFrame(columns=self.extracted_statistics_host).set_index("Time")
 
             # Times converted to milisecond durations
@@ -129,42 +126,43 @@ class ProfileClient:
         """ Callback on the node_statistics topic. Given Values are:
             Threads, Cpu load, virtual and real memory
         """
+        for key, value in self.host_dict.items():
+            if key in msg.uri and value in msg.node:    
+                # 0. initialise an empty dataframe
+                temp_df = pd.DataFrame(columns=self.extracted_statistics_node).set_index("Time")
+                
+                # 1. Get all the values of interest out
+                # Times converted to second durations
+                t = msg.window_stop.to_sec()
+                duration = (msg.window_stop - msg.window_start).to_nsec() / 1000000 
+                temp_df.at[t, "Duration"] = duration
+                temp_df.at[t, "Samples"] = msg.samples
 
-        if msg.node in self.nodes:
-            # 0. initialise an empty dataframe
-            temp_df = pd.DataFrame(columns=self.extracted_statistics_node).set_index("Time")
-            
-            # 1. Get all the values of interest out
-            # Times converted to second durations
-            t = msg.window_stop.to_sec()
-            duration = (msg.window_stop - msg.window_start).to_nsec() / 1000000 
-            temp_df.at[t, "Duration"] = duration
-            temp_df.at[t, "Samples"] = msg.samples
+                # CPU Stuff
+                temp_df.at[t, "Threads"] = msg.threads
+                temp_df.at[t, "CPU Count"] = msg.cpu_count
+                temp_df.at[t, "CPU Load mean"] = msg.cpu_load_mean 
+                temp_df.at[t, "CPU Load max"] = msg.cpu_load_max
+                temp_df.at[t, "CPU Load std"] = msg.cpu_load_std
+                
+                # Memory - Virtual, PSS and Swap
+                temp_df.at[t, "Virtual Memory mean"] = (int(pd.np.floor(msg.virt_mem_mean)) >> 20)
+                temp_df.at[t, "Virtual Memory std"] = (int(pd.np.floor(msg.virt_mem_std ))>> 20)
+                temp_df.at[t, "Virtual Memory max"] = (int(pd.np.floor(msg.virt_mem_max ))>> 20)
+                temp_df.at[t, "PSS mean"] = (int(pd.np.floor(msg.pss_mean)) >> 20)
+                temp_df.at[t, "PSS std"] = (int(pd.np.floor(msg.pss_std))>> 20)
+                temp_df.at[t, "PSS max"] = (int(pd.np.floor(msg.pss_max))>> 20)
 
-            # CPU Stuff
-            temp_df.at[t, "Threads"] = msg.threads
-            temp_df.at[t, "CPU Count"] = msg.cpu_count
-            temp_df.at[t, "CPU Load mean"] = msg.cpu_load_mean 
-            temp_df.at[t, "CPU Load max"] = msg.cpu_load_max
-            temp_df.at[t, "CPU Load std"] = msg.cpu_load_std
-            
-            # Memory - Virtual, PSS and Swap
-            temp_df.at[t, "Virtual Memory mean"] = (int(pd.np.floor(msg.virt_mem_mean)) >> 20)
-            temp_df.at[t, "Virtual Memory std"] = (int(pd.np.floor(msg.virt_mem_std ))>> 20)
-            temp_df.at[t, "Virtual Memory max"] = (int(pd.np.floor(msg.virt_mem_max ))>> 20)
-            temp_df.at[t, "PSS mean"] = (int(pd.np.floor(msg.pss_mean)) >> 20)
-            temp_df.at[t, "PSS std"] = (int(pd.np.floor(msg.pss_std))>> 20)
-            temp_df.at[t, "PSS max"] = (int(pd.np.floor(msg.pss_max))>> 20)
+                temp_df.at[t, "Swap Used mean"] = (int(pd.np.floor(msg.swap_mean))>> 20)
+                temp_df.at[t, "Swap Used std"] = (int(pd.np.floor(msg.swap_std))>> 20)
+                temp_df.at[t, "Swap Used max"] = (int(pd.np.floor(msg.swap_max))>> 20)
+                
+                # 2. Get the target dataframe which the values should be appended to out
+                idx = str(key+"_"+value)
+                target_df = self.node_df_dict[idx]
 
-            temp_df.at[t, "Swap Used mean"] = (int(pd.np.floor(msg.swap_mean))>> 20)
-            temp_df.at[t, "Swap Used std"] = (int(pd.np.floor(msg.swap_std))>> 20)
-            temp_df.at[t, "Swap Used max"] = (int(pd.np.floor(msg.swap_max))>> 20)
-            
-            # 2. Get the target dataframe which the values should be appended to out
-            target_df = self.node_df_dict[msg.node]
-
-            # 3. Concatenate the dfs
-            self.node_df_dict[msg.node] = self.concat_df(target_df, temp_df)
+                # 3. Concatenate the dfs
+                self.node_df_dict[idx] = self.concat_df(target_df, temp_df)
 
 
     # Helper functions        
