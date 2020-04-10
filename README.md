@@ -83,13 +83,13 @@ Check with client.py whether the changes are the same noted down in there
     - [x] change [this](./src/rosprofiler/profiler_Nano.py#L94) to accept the rosparams set by the .config file in the `rosprofiler` package
 
 - [ ] Change the fields the client accepts and
-     * [ ] Host Statistics Nano, see [here](./src/client.py#L49) and [here](./src/client.py#L48)
-     * [ ] Node Statistics Nano, see [here](./src/client.py#L75) and [here](./src/client.py#L61)
+     * [x] Host Statistics Nano, see [here](./src/client.py#L49) and [here](./src/client.py#L48)
+     * [x] Node Statistics Nano, see [here](./src/client.py#L75) and [here](./src/client.py#L61)
      * [ ] which nodes to log is double covered, see [here](./src/client.py#L) and [here](./src/rosprofiler/profiler_Nano.py#L142)
 - [ ] Launch file for starting timing logging together with client logging
-    - [ ] resolve namespace grouping issues, topic initialisation etc.
+    - [x] resolve namespace grouping issues, topic initialisation etc.
 - [ ] Find a way to profile the rosprofiling node on the client
-    - [ ] cannot append to [rosparam list](./config/profileparams.yaml)
+    - [x] cannot append to [rosparam list](./config/profileparams.yaml)
     - [ ] command line argument with [this syntax](./launch/nano_profiler.launch#L13)
     - [ ] workaround inside the client, by looking for a combination of "nan" and "prof" in all the node name list? see [here](./src/rosprofiler/host_monitor_nano.py#L43) and [here](./src/client.py#L24) for reference
 

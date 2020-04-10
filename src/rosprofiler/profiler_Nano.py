@@ -54,7 +54,6 @@ def get_ros_ip():
         ros_ip = re.sub('\.', '_', ros_ip)
     return ros_ip
 
-
 def get_sys_hostname():
     """ If the system hostname is also a valid ROS name, return the hostname.
     Otherwise, return the first 6 digits of the md5sum of the hostname
@@ -89,28 +88,23 @@ class Profiler(object):
         if not host_dict:
             raise rospy.ROSInitException("Nothing to log specified")
         else:
-            try:
-                hname = socket.getfqdn()
-                own_ip = socket.gethostbyname(hname)
-                rospy.logwarn("IP_adress for {} is {}".format(hname, own_ip))
-            except OSError:
-                raise rospy.ROSInitException("Unable to get own IP Adress")
+           self._local_ip = rosgraph.network.get_local_address()
         
         # Debug throw-in:
         for key, value in host_dict.items():
-            rospy.logwarn("Logging Hostname: {} \t Nodes: {}".format(key,value))
+            rospy.logwarn("Logging Host: {} \t Nodes: {}".format(key,value))
 
-        if own_ip in host_dict.keys():
+        if self._local_ip in host_dict.keys():
             self._host_monitor = HostMonitor()
 
             self._node_publisher = rospy.Publisher('node_statistics', NodeStatisticsNano, queue_size=10)
             self._host_publisher = rospy.Publisher('host_statistics', NanoStatistics, queue_size=10)
 
             # Processes we are watching
-            self.nodelist = host_dict[own_ip]
+            self.nodelist = host_dict[self._local_ip]
             if not self.nodelist:
                 rospy.logwarn("No nodes specified. Looking for All Nodes on the host")
-                self.nodelist = rosnode.get_nodes_by_machine(rosgraph.network.get_host_name()) #very expensive lookup 
+                self.nodelist = rosnode.get_nodes_by_machine(self._local_ip) #very expensive lookup 
             self._nodes = dict()
 
             # Timers Rates
@@ -156,7 +150,7 @@ class Profiler(object):
 
     def _update_node_list(self, event=None):
         """ Contacts the master using xmlrpc to determine what processes to watch """
-        nodenames = rosnode.get_nodes_by_machine(rosgraph.network.get_host_name()) # very expensive lookup btw
+        nodenames = rosnode.get_nodes_by_machine(self._local_ip) # very expensive lookup btw
         if len(nodenames) != len(self.nodelist):
             nodenames = [name for name in nodenames for item in self.nodelist if item in name]
         # Lock data structures while making changes
