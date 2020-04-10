@@ -127,43 +127,45 @@ class ProfileClient:
         """ Callback on the node_statistics topic. Given Values are:
             Threads, Cpu load, virtual and real memory
         """
-        for key, value in self.host_dict.items():
-            if key in msg.uri and value in msg.node:    
-                # 0. initialise an empty dataframe
-                temp_df = pd.DataFrame(columns=self.extracted_statistics_node).set_index("Time")
-                
-                # 1. Get all the values of interest out
-                # Times converted to second durations
-                t = msg.window_stop.to_sec()
-                duration = (msg.window_stop - msg.window_start).to_nsec() / 1000000 
-                temp_df.at[t, "Duration"] = duration
-                temp_df.at[t, "Samples"] = msg.samples
+        for key, values in self.host_dict.items():
+            if key in msg.uri:
+                for value in values:
+                    if value in msg.node:    
+                        # 0. initialise an empty dataframe
+                        temp_df = pd.DataFrame(columns=self.extracted_statistics_node).set_index("Time")
+                        
+                        # 1. Get all the values of interest out
+                        # Times converted to second durations
+                        t = msg.window_stop.to_sec()
+                        duration = (msg.window_stop - msg.window_start).to_nsec() / 1000000 
+                        temp_df.at[t, "Duration"] = duration
+                        temp_df.at[t, "Samples"] = msg.samples
 
-                # CPU Stuff
-                temp_df.at[t, "Threads"] = msg.threads
-                temp_df.at[t, "CPU Count"] = msg.cpu_count
-                temp_df.at[t, "CPU Load mean"] = msg.cpu_load_mean 
-                temp_df.at[t, "CPU Load max"] = msg.cpu_load_max
-                temp_df.at[t, "CPU Load std"] = msg.cpu_load_std
-                
-                # Memory - Virtual, PSS and Swap
-                temp_df.at[t, "Virtual Memory mean"] = (int(pd.np.floor(msg.virt_mem_mean)) >> 20)
-                temp_df.at[t, "Virtual Memory std"] = (int(pd.np.floor(msg.virt_mem_std ))>> 20)
-                temp_df.at[t, "Virtual Memory max"] = (int(pd.np.floor(msg.virt_mem_max ))>> 20)
-                temp_df.at[t, "PSS mean"] = (int(pd.np.floor(msg.pss_mean)) >> 20)
-                temp_df.at[t, "PSS std"] = (int(pd.np.floor(msg.pss_std))>> 20)
-                temp_df.at[t, "PSS max"] = (int(pd.np.floor(msg.pss_max))>> 20)
+                        # CPU Stuff
+                        temp_df.at[t, "Threads"] = msg.threads
+                        temp_df.at[t, "CPU Count"] = msg.cpu_count
+                        temp_df.at[t, "CPU Load mean"] = msg.cpu_load_mean 
+                        temp_df.at[t, "CPU Load max"] = msg.cpu_load_max
+                        temp_df.at[t, "CPU Load std"] = msg.cpu_load_std
+                        
+                        # Memory - Virtual, PSS and Swap
+                        temp_df.at[t, "Virtual Memory mean"] = (int(pd.np.floor(msg.virt_mem_mean)) >> 20)
+                        temp_df.at[t, "Virtual Memory std"] = (int(pd.np.floor(msg.virt_mem_std ))>> 20)
+                        temp_df.at[t, "Virtual Memory max"] = (int(pd.np.floor(msg.virt_mem_max ))>> 20)
+                        temp_df.at[t, "PSS mean"] = (int(pd.np.floor(msg.pss_mean)) >> 20)
+                        temp_df.at[t, "PSS std"] = (int(pd.np.floor(msg.pss_std))>> 20)
+                        temp_df.at[t, "PSS max"] = (int(pd.np.floor(msg.pss_max))>> 20)
 
-                temp_df.at[t, "Swap Used mean"] = (int(pd.np.floor(msg.swap_mean))>> 20)
-                temp_df.at[t, "Swap Used std"] = (int(pd.np.floor(msg.swap_std))>> 20)
-                temp_df.at[t, "Swap Used max"] = (int(pd.np.floor(msg.swap_max))>> 20)
-                
-                # 2. Get the target dataframe which the values should be appended to out
-                idx = str(key+"_"+value)
-                target_df = self.node_df_dict[idx]
+                        temp_df.at[t, "Swap Used mean"] = (int(pd.np.floor(msg.swap_mean))>> 20)
+                        temp_df.at[t, "Swap Used std"] = (int(pd.np.floor(msg.swap_std))>> 20)
+                        temp_df.at[t, "Swap Used max"] = (int(pd.np.floor(msg.swap_max))>> 20)
+                        
+                        # 2. Get the target dataframe which the values should be appended to out
+                        idx = str(key+"_"+value)
+                        target_df = self.node_df_dict[idx]
 
-                # 3. Concatenate the dfs
-                self.node_df_dict[idx] = self.concat_df(target_df, temp_df)
+                        # 3. Concatenate the dfs
+                        self.node_df_dict[idx] = self.concat_df(target_df, temp_df)
 
 
     # Helper functions        
