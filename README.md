@@ -11,6 +11,12 @@ rosprofiler
 
 
 ## Nico TODOs:
+[ ] Fix the local shit - why are there no nodes being logged?
+    * [ ] is the [list comprehension](.src/profiler_Nano.py#L151) shitty? Tested [here](./src/teststuff.py#L23)
+    * [ ] is the [cross checking](./src/profiler_Nano.py#L100) just as terrible??
+    * [ ] **RUN** the Profiler file in debug mode
+
+
 Check with client.py whether the changes are the same noted down in there
 - [x] Units for the memory management need to be converted, see this [stackoverflow](https://stackoverflow.com/questions/21792655/psutil-virtual-memory-units-of-measurement)
 - [x] Check the sample rates and intervals - do the values get reset each sample - yes, see [profiler.py, l. 176](./src/rosprofiler/profiler.py#L176)

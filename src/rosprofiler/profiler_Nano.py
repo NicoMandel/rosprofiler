@@ -89,6 +89,7 @@ class Profiler(object):
             raise rospy.ROSInitException("Nothing to log specified")
         else:
            self._local_ip = rosgraph.network.get_local_address()
+           self._host = rosgraph.network.get_host_name()
 
         if self._local_ip in host_dict.keys():
             self._host_monitor = HostMonitor()
@@ -146,7 +147,7 @@ class Profiler(object):
 
     def _update_node_list(self, event=None):
         """ Contacts the master using xmlrpc to determine what processes to watch """
-        nodenames = rosnode.get_nodes_by_machine(self._local_ip) # very expensive lookup btw
+        nodenames = rosnode.get_nodes_by_machine(self._host) # very expensive lookup btw
         if len(nodenames) != len(self.nodelist):
             nodenames = [name for name in nodenames for item in self.nodelist if item in name]
         # Lock data structures while making changes
@@ -194,3 +195,12 @@ class Profiler(object):
             for node in self._nodes.values():
                 self._node_publisher.publish(node.get_statistics())
                 node.reset()
+
+
+if __name__=="__main__":
+    try:
+        prof = Profiler()
+        prof.start()
+        rospy.spin()
+    except rospy.ROSException as e:
+        rospy.logerr(e)
