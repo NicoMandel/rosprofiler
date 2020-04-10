@@ -87,6 +87,11 @@ Check with client.py whether the changes are the same noted down in there
      * [ ] Node Statistics Nano, see [here](./src/client.py#L75) and [here](./src/client.py#L61)
      * [ ] which nodes to log is double covered, see [here](./src/client.py#L) and [here](./src/rosprofiler/profiler_Nano.py#L142)
 - [ ] Launch file for starting timing logging together with client logging
+    - [ ] resolve namespace grouping issues, topic initialisation etc.
+- [ ] Find a way to profile the rosprofiling node on the client
+    - [ ] cannot append to [rosparam list](./config/profileparams.yaml)
+    - [ ] command line argument with [this syntax](./launch/nano_profiler.launch#L13)
+    - [ ] workaround inside the client, by looking for a combination of "nan" and "prof" in all the node name list? see [here](./src/rosprofiler/host_monitor_nano.py#L43) and [here](./src/client.py#L24) for reference
 
 
 ## NICO Nice-to-Haves

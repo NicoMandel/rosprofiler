@@ -90,16 +90,16 @@ class Profiler(object):
         self._host_publisher = rospy.Publisher('host_statistics', NanoStatistics, queue_size=10)
 
         # Processes we are watching
-        self.nodelist = rospy.get_param("/nodes", default=None)
+        self.nodelist = rospy.get_param("nodes", default=None)
         if self.nodelist is None:
             rospy.logwarn("No nodes specified. Looking for All Nodes on the host")
             self.nodelist = rosnode.get_nodes_by_machine(rosgraph.network.get_host_name()) #very expensive lookup 
         self._nodes = dict()
 
         # Timers Rates
-        sample_rate = rospy.get_param("/sampleRate", default=0.2)
+        sample_rate = rospy.get_param("sampleRate", default=0.2)
         self.sample_rate = rospy.Duration(sample_rate)
-        update_rate = rospy.get_param("/updateRate", default=2)
+        update_rate = rospy.get_param("updateRate", default=2)
         self.update_rate = rospy.Duration(update_rate)
 
     def start(self):

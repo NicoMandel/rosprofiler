@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import rospy
-from ros_statistics_msgs.msg import HostStatistics, NodeStatistics
+from ros_statistics_msgs.msg import NanoStatistics, NodeStatisticsNano
 import socket
 import pandas as pd # to gather the data collected
 import os.path
@@ -13,10 +13,10 @@ class ProfileClient:
     def __init__(self):
         """ A client class on the rosprofiler topic msgs"""
 
-        self.filename = rospy.get_param("filename", default="default")
+        self.filename = rospy.get_param('filename', default="default")
         # Get parameters from server to find out what to track and where to write it
-        hosts = rospy.get_param('/hosts', default=None)
-        self.nodes = rospy.get_param('/nodes', default=None)
+        hosts = rospy.get_param('hosts', default=None)
+        self.nodes = rospy.get_param('nodes', default=None)
         if hosts is None:
             rospy.logwarn("No Machines specified. Logging All")
             hosts = rosnode.get_machines_by_nodes()
@@ -26,7 +26,14 @@ class ProfileClient:
             self.nodes = rosnode.get_node_names()
 
         # Setup work for the hosts
-        self.extracted_statistics_host = ["Time","Duration", "Samples", "CPU load mean of max", "CPU load max of mean", "Phymem used mean", "Phymem used max", "phymem avail mean", "Phymem avail max"]
+        self.extracted_statistics_host = ["Time", "Duration", "Samples", "CPU Count", "Power"
+        "CPU Load mean", "CPU Load max", "CPU Load std"
+        "Used Memory mean", "Used Memory max", "Used Memory std"
+        "Available Memory mean", "Available Memory min", "Available Memory std", 
+        "Shared Memory mean", "Shared Memory std", "Shared Memory max",
+        "Swap Available mean", "Swap Available std", "Swap Available min",
+        "Swap Used mean", "Swap Used std", "Swap Used max"        
+        ]
         host_df = pd.DataFrame(columns=self.extracted_statistics_host).set_index("Time")
 
         # Assign a Dataframe to each host 
@@ -38,7 +45,13 @@ class ProfileClient:
             self.host_df_dict[ip] = host_df.copy(deep=True)
         
         # Setup work for the Nodes
-        self.extracted_statistics_node = ["Time", "Duration", "Samples", "Threads", "CPU load mean", "CPU load max", "Virtual Memory mean", "Virtual memory Max", "Real Memory Mean", "Real Memory Max"]
+        self.extracted_statistics_node = ["Time", "Duration", "Samples", "CPU Count"
+        "Threads", "CPU Load mean", "CPU Load max", "CPU Load std"
+        "PSS mean", "PSS std", "PSS max"
+        "Swap Used mean", "Swap Used std", "Swap Used max",
+        "Virtual Memory mean", "Virtual Memory std", "Virtual Memory max"
+        ]
+
         node_df = pd.DataFrame(columns=self.extracted_statistics_node).set_index("Time")
         self.node_df_dict= {}
         for node in self.nodes:
@@ -46,22 +59,31 @@ class ProfileClient:
         
         
         # Waiting for the topic to get going and setting up shutdown function
-        rospy.wait_for_message("/host_statistics", HostStatistics)
+        rospy.wait_for_message("host_statistics", NanoStatistics)
         rospy.on_shutdown(self.writeToFile)
 
         # Subscribers last - to not mess up when messages come in before everything is set up
-        rospy.Subscriber("/host_statistics", HostStatistics, self.host_callback, queue_size=10)
-        rospy.Subscriber("/node_statistics", NodeStatistics, self.node_callback, queue_size=10)
+        rospy.Subscriber("host_statistics", NanoStatistics, self.host_callback, queue_size=10)
+        rospy.Subscriber("node_statistics", NodeStatisticsNano, self.node_callback, queue_size=10)
 
     
     def host_callback(self, msg):
         """ Callback on the host_statistics topic:
             hostname, ipaddress, window start and stop times,
+            cpu_count 
             sample number
+            power consumption
+
             cpu load: mean, std dev, max
+            
             phymem_used: mean, std, max
-            phymem_avail: mean, std, max
+            phymem_avail: mean, std, min
+            phymem_shared: mean, std, max
+
+            swap_used: mean, std, max
+            swap_available: mean, std, min
         """
+
         if msg.ipaddress in self.ips:
             temp_df = pd.DataFrame(columns=self.extracted_statistics_host).set_index("Time")
 
@@ -70,13 +92,35 @@ class ProfileClient:
             duration = (msg.window_stop - msg.window_start).to_nsec() / 1000000
             temp_df.at[t, "Duration"] = duration
             temp_df.at[t, "Samples"] = float(msg.samples)
-            # Converted host statistics - mean of max and max of mean
-            temp_df.at[t, "CPU load max of mean"] = pd.np.mean(msg.cpu_load_mean)
-            temp_df.at[t, "CPU load mean of max"] = pd.np.max(msg.cpu_load_max)
-            temp_df.at[t, "Phymem used mean"] = (int(pd.np.floor(msg.phymem_used_mean)) >> 20)
-            temp_df.at[t, "Phymem used max"] = (int(pd.np.floor(msg.phymem_used_max)) >> 20)
-            temp_df.at[t, "phymem avail mean"] = (int(pd.np.floor(msg.phymem_avail_mean)) >> 20)
-            temp_df.at[t, "Phymem avail max"] = (int(pd.np.floor(msg.phymem_avail_max)) >> 20)
+            temp_df.at[t, "CPU Count"] = msg.cpu_count
+
+            # Power is smaller than Zero if its not a Nano
+            temp_df.at[t, "Power"] = msg.power
+
+            # CPU statistics 
+            temp_df.at[t, "CPU Load mean"] = msg.cpu_load_mean
+            temp_df.at[t, "CPU Load max"] = msg.cpu_load_max
+            temp_df.at[t, "CPU Load std"] = msg.cpu_load_std
+
+            # Memory statistics - Used, Available and shared 
+            temp_df.at[t, "Used Memory mean"] = (int(pd.np.floor(msg.phymem_used_mean)) >> 20)
+            temp_df.at[t, "Used Memory max"] = (int(pd.np.floor(msg.phymem_used_max)) >> 20)
+            temp_df.at[t, "Used Memory std"] = (int(pd.np.floor(msg.phymem_used_std)) >> 20)
+            temp_df.at[t, "Available Memory mean"] = (int(pd.np.floor(msg.phymem_avail_mean)) >> 20)
+            temp_df.at[t, "Available Memory min"] = (int(pd.np.floor(msg.phymem_avail_min)) >> 20)
+            temp_df.at[t, "Available Memory std"] = (int(pd.np.floor(msg.phymem_avail_std)) >> 20) # TODO: KBs?
+            temp_df.at[t, "Shared Memory mean"] = (int(pd.np.floor(msg.phymem_shared_mean)) >> 20)
+            temp_df.at[t, "Shared Memory mean"] = (int(pd.np.floor(msg.phymem_shared_std)) >> 20)
+            temp_df.at[t, "Shared Memory mean"] = (int(pd.np.floor(msg.phymem_shared_max)) >> 20)
+
+            # Memory statistics - Swap - used and available
+            temp_df.at[t, "Swap Used mean"] = (int(pd.np.floor(msg.swap_used_mean)) >> 20)
+            temp_df.at[t, "Swap Used std"] = (int(pd.np.floor(msg.swap_used_std)) >> 20)
+            temp_df.at[t, "Swap Used max"] = (int(pd.np.floor(msg.swap_used_max)) >> 20)
+            temp_df.at[t, "Swap Available mean"] = (int(pd.np.floor(msg.swap_avail_mean)) >> 20)
+            temp_df.at[t, "Swap Available std"] = (int(pd.np.floor(msg.swap_avail_std)) >> 20)
+            temp_df.at[t, "Swap Available min"] = (int(pd.np.floor(msg.swap_avail_min)) >> 20)
+
             target_df = self.host_df_dict[msg.ipaddress]
             self.host_df_dict[msg.ipaddress] = self.concat_df(target_df, temp_df)
 
@@ -95,15 +139,26 @@ class ProfileClient:
             t = msg.window_stop.to_sec()
             duration = (msg.window_stop - msg.window_start).to_nsec() / 1000000 
             temp_df.at[t, "Duration"] = duration
-            temp_df.at[t, "Samples"] = float(msg.samples)
-            temp_df.at[t, "Threads"] = float(msg.threads)
-            # TODO: percentage of total total local use - change this to be more meaningful from psutil
-            temp_df.at[t, "CPU load mean"] = msg.cpu_load_mean 
-            temp_df.at[t, "CPU load max"] = msg.cpu_load_max
+            temp_df.at[t, "Samples"] = msg.samples
+
+            # CPU Stuff
+            temp_df.at[t, "Threads"] = msg.threads
+            temp_df.at[t, "CPU Count"] = msg.cpu_count
+            temp_df.at[t, "CPU Load mean"] = msg.cpu_load_mean 
+            temp_df.at[t, "CPU Load max"] = msg.cpu_load_max
+            temp_df.at[t, "CPU Load std"] = msg.cpu_load_std
+            
+            # Memory - Virtual, PSS and Swap
             temp_df.at[t, "Virtual Memory mean"] = (int(pd.np.floor(msg.virt_mem_mean)) >> 20)
-            temp_df.at[t, "Virtual memory Max"] = (int(pd.np.floor(msg.virt_mem_max ))>> 20)
-            temp_df.at[t, "Real Memory Mean"] = (int(pd.np.floor(msg.real_mem_mean)) >> 20)
-            temp_df.at[t, "Real Memory Max"] = (int(pd.np.floor(msg.real_mem_max ))>> 20)
+            temp_df.at[t, "Virtual Memory std"] = (int(pd.np.floor(msg.virt_mem_std ))>> 20)
+            temp_df.at[t, "Virtual Memory max"] = (int(pd.np.floor(msg.virt_mem_max ))>> 20)
+            temp_df.at[t, "PSS mean"] = (int(pd.np.floor(msg.pss_mean)) >> 20)
+            temp_df.at[t, "PSS std"] = (int(pd.np.floor(msg.pss_std))>> 20)
+            temp_df.at[t, "PSS max"] = (int(pd.np.floor(msg.pss_max))>> 20)
+
+            temp_df.at[t, "Swap Used mean"] = (int(pd.np.floor(msg.swap_mean))>> 20)
+            temp_df.at[t, "Swap Used std"] = (int(pd.np.floor(msg.swap_std))>> 20)
+            temp_df.at[t, "Swap Used max"] = (int(pd.np.floor(msg.swap_max))>> 20)
             
             # 2. Get the target dataframe which the values should be appended to out
             target_df = self.node_df_dict[msg.node]

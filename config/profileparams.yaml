@@ -1,13 +1,14 @@
 # these are the things that our rosprofile client will read and determine what it will inspect
 hosts:
+    # this value has to be specified 
     - "nano-wired"
 
 nodes: 
-    - "/talker"
-    - "/listener"
+    # - "talker"
+    - "listener"
 
 topics:
-    - "chatter_loopback"
+    # - "chatter_loopback"
     - "chatter"
 
 sampleRate: 0.2

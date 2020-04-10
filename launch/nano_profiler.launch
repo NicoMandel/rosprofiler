@@ -3,19 +3,26 @@
     <param name="enable_statistics" value="true"/>
     <arg name="freq" default="2"/>
     <param name="frequency" type="int" value="$(arg freq)"/>
-    <rosparam command="load" file="$(find beginner_tutorials)/config/profileparams.yaml"/>
-
     <machine name="$(arg machine)" address="nano-wired" user="nico" env-loader="/home/nico/catkin_ws/devel/env_new.sh" timeout="10.0" default="false" />
+
+    <!-- Monitoring Namespace -->
+    <group ns="rosprofiler">
+        <rosparam command="load" file="$(find rosprofiler)/config/profileparams.yaml"/>
+        <param name="filename" type="string" value="case_$(arg freq)"/>
+
+        <node machine="$(arg machine)" pkg="rosprofiler" type="rosprofilerNano" name="rosprofiler_$(arg machine)" output="screen"/>
+        <node pkg="rosprofiler" type="rosprofilerNano" name="$(anon rosprofiler)" output="screen"/>
+
+        <!-- Monitoring Node -->
+        <node pkg="rosprofiler" name="profiling_client" type="client.py" output="screen"/>
+    </group>
 
     <!-- Client Nodes  -->
     <node machine="$(arg machine)" pkg="beginner_tutorials" name="listener" type="listener" output="screen"/>
-    <node machine="$(arg machine)" pkg="rosprofiler" type="rosprofilerNano" name="rosprofiler_$(arg machine)" output="screen"/>
 
     <!-- Host Nodes -->
     <node pkg="beginner_tutorials" name="talker" type="talker" output="screen"/>
-    <node pkg="rosprofiler" type="rosprofilerNano" name="$(anon rosprofiler)" output="screen"/>
     <node pkg="rosprofiler" type="rosgrapher" name="rosgrapher" output="screen"/>
 
-    <!-- Monitoring Node -->
-    <!-- <node pkg="rosprofiler" name="profiling_client" type="client.py" output="screen"/> -->
+  
 </launch>

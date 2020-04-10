@@ -35,7 +35,7 @@ class NodeMonitor(object):
         self.pid = pid
         self._process = psutil.Process(int(self.pid))
         self._process_ok = True  # This gets set to false if the process dies
-
+        self._cpu_count = psutil.cpu_count() # Gets the number of logical cores
         self.cpu_log = list()
         self.virt_log = list()
         self.pss_log = list()
@@ -79,6 +79,7 @@ class NodeMonitor(object):
         statistics.threads = self.num_threads
         statistics.window_start = self.start_time
         statistics.window_stop = rospy.get_rostime()
+        statistics.cpu_count = self._cpu_count
 
         if len(self.cpu_log) > 0:
             cpu_log = np.array(self.cpu_log)
