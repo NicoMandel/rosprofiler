@@ -101,7 +101,7 @@ class Profiler(object):
             self.nodelist = host_dict[self._local_ip]
             if not self.nodelist:
                 rospy.logwarn("No nodes specified. Looking for All Nodes on the host")
-                self.nodelist = rosnode.get_nodes_by_machine(self._local_ip) #very expensive lookup 
+                self.nodelist = rosnode.get_nodes_by_machine(self._host) #very expensive lookup 
             self._nodes = dict()
 
             # Timers Rates

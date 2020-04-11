@@ -15,14 +15,43 @@ class ProfileClient:
 
         self.filename = rospy.get_param('filename', default="default")
         # Get parameters from server to find out what to track and where to write it
-        self.host_dict = rospy.get_param('hosts', default=None)
+        host_dict = rospy.get_param('hosts', default=None)
         
-        if self.host_dict is None:
+        if host_dict is None:
             self.host_dict = {}
             rospy.logwarn("No Machines specified. Logging all nodes on all machines")
-            hosts = rosnode.get_machines_by_nodes()
+            hosts = rosnode.get_machines_by_nodes() # this ALWAYS returns a legal lookup
             for host in hosts:
-                self.host_dict[host] = rosnode.get_nodes_by_machine(host)                
+                self.host_dict[host] = rosnode.get_nodes_by_machine(host) 
+        else:
+            # create a lookup between host name and ip
+            self.host_dict = {}
+            host_lookup = {}
+            for key in host_dict.keys():
+                try:
+                    h_name = socket.gethostbyaddr(key)[0].split('.')[0].lower()
+                    ip = key
+                except:
+                    ip = socket.gethostbyname(key)
+                    h_name = key.lower()    
+                host_lookup[ip] = h_name
+
+            # These are the names in the ROS environment
+            machines = rosnode.get_machines_by_nodes()
+            # these are the keys we need to translate
+
+            # 1. for every one of the things we are interested in
+            for ip, host in host_lookup.items():
+                for machine in machines:
+                    if (ip in machine) or (host in machine):
+                        for key in host_dict.keys():
+                            if key in ip:
+                                self.host_dict[machine] = host_dict[key]
+                                break
+                            elif key in host:
+                                self.host_dict[machine] = host_dict[key]
+                                break
+                        break
 
         # Setup work for the hosts
         self.extracted_statistics_host = ["Time", "Duration", "Samples", "CPU Count", "Power",
@@ -128,9 +157,9 @@ class ProfileClient:
             Threads, Cpu load, virtual and real memory
         """
         for key, values in self.host_dict.items():
-            if key in msg.uri:
+            if key in msg.uri.lower():          # this uri is either the IP or the ros_hostname
                 for value in values:
-                    if value in msg.node:    
+                    if value in msg.node.lower():    
                         # 0. initialise an empty dataframe
                         temp_df = pd.DataFrame(columns=self.extracted_statistics_node).set_index("Time")
                         

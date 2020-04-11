@@ -17,7 +17,7 @@ rosprofiler
     * [x] **RUN** the Profiler file in debug mode
 
 * [ ] **FIX** Why the talker node does not show up in the log - assuming because of the ip and hostname confusion, as before, now appearing in [client.py](./src/client.py#L131) and [line ](./src/client.py#L54) - make consistent with the solution from [here](./src/rosprofiler/profiler_Nano.py#L91)
-* [ ] PULL changes to the nano
+* [x] PULL changes to the nano and compile
 
 Check with client.py whether the changes are the same noted down in there
 - [x] Units for the memory management need to be converted, see this [stackoverflow](https://stackoverflow.com/questions/21792655/psutil-virtual-memory-units-of-measurement)
@@ -90,7 +90,7 @@ Check with client.py whether the changes are the same noted down in there
 - [x] Implement the option to only monitor certain nodes:
     - [x] change [this](./src/rosprofiler/profiler_Nano.py#L94) to accept the rosparams set by the .config file in the `rosprofiler` package
 
-- [ ] Change the fields the client accepts and
+- [x] Change the fields the client accepts and
      * [x] Host Statistics Nano, see [here](./src/client.py#L49) and [here](./src/client.py#L48)
      * [x] Node Statistics Nano, see [here](./src/client.py#L75) and [here](./src/client.py#L61)
      * [ ] which nodes to log is double covered, see [here](./src/client.py#L) and [here](./src/rosprofiler/profiler_Nano.py#L142)
@@ -102,10 +102,17 @@ Check with client.py whether the changes are the same noted down in there
     - [ ] workaround inside the client, by looking for a combination of "nan" and "prof" in all the node name list? see [here](./src/rosprofiler/host_monitor_nano.py#L43) and [here](./src/client.py#L24) for reference
 
 trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.py#L15@d05115ea722b46f9e84e259117c3ed09fc327460)
+
+## Nico Potential Fixes
+
+* [ ] check if the `_update_node_list`- function, [here](./src/rosprofiler/profiler_Nano.py#L148) does not work due to mavros length!
+
+
 ## NICO Nice-to-Haves
 
 1. udp port usage, to see how much mavlink actually uses, check [this documentation](https://psutil.readthedocs.io/en/latest/#psutil.net_connections)
-    * ` For example 9600 8 N 1 uses 10 bits per word (1 start bit, 8 data bits, and 1 stop bit). Each word would take 10/9600 = 1041.66666666 microsecs.` - to monitor whether we get channel overload on the udp port
+    * ` For example 9600 8 N 1 uses 10 bits per word (1 start bit, 8 data bits, and 1 stop bit). Each word would take 10/9600 = 1041.66666666 microsecs`  to monitor whether we get channel overload on the udp port
+    * use a switch in the launch file and put this into a separate file
 2. Heat dissipation sensing, see [documentation](https://psutil.readthedocs.io/en/latest/#psutil.sensors_temperatures)
 
 # Stuff from the original documentation

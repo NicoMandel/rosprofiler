@@ -1,10 +1,10 @@
 # these are the things that our rosprofile client will read and determine what it will inspect
 hosts: 
     "192.168.1.120":
-        - "listener"
-        - "profil"
+        - "listen"
+        - "profile"
     "192.168.1.148":
-        - "talker"
+        - "talk"
 
 
 # hosts:
