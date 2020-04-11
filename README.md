@@ -16,8 +16,9 @@ rosprofiler
     * [x] is the [cross checking](./src/profiler_Nano.py#L100) just as terrible??
     * [x] **RUN** the Profiler file in debug mode
 
-* [ ] **FIX** Why the talker node does not show up in the log - assuming because of the ip and hostname confusion, as before, now appearing in [client.py](./src/client.py#L131) and [line ](./src/client.py#L54) - make consistent with the solution from [here](./src/rosprofiler/profiler_Nano.py#L91)
-* [x] PULL changes to the nano and compile
+* [x]  Why the talker node does not show up in the log - assuming because of the ip and hostname confusion, as before, now appearing in [client.py](./src/client.py#L131) and [line ](./src/client.py#L54) - make consistent with the solution from [here](./src/rosprofiler/profiler_Nano.py#L91)
+    * [x] hostname and IP cross-usage in ROS through the launch file. check [here](./src/rosprofiler/client.py#L44)
+* [ ] PULL changes to the nano and compile
 
 Check with client.py whether the changes are the same noted down in there
 - [x] Units for the memory management need to be converted, see this [stackoverflow](https://stackoverflow.com/questions/21792655/psutil-virtual-memory-units-of-measurement)
@@ -93,10 +94,11 @@ Check with client.py whether the changes are the same noted down in there
 - [x] Change the fields the client accepts and
      * [x] Host Statistics Nano, see [here](./src/client.py#L49) and [here](./src/client.py#L48)
      * [x] Node Statistics Nano, see [here](./src/client.py#L75) and [here](./src/client.py#L61)
-     * [ ] which nodes to log is double covered, see [here](./src/client.py#L) and [here](./src/rosprofiler/profiler_Nano.py#L142)
+     * [x] which nodes to log is double covered, see [here](./src/client.py#L) and [here](./src/rosprofiler/profiler_Nano.py#L142)
 - [ ] Launch file for starting timing logging together with client logging
     - [x] resolve namespace grouping issues, topic initialisation etc.
-- [ ] Find a way to profile the rosprofiling node on the client
+    * [ ] Include Timing node 
+- [x] Find a way to profile the rosprofiling node on the client
     - [x] cannot append to [rosparam list](./config/profileparams.yaml)
     - [ ] command line argument with [this syntax](./launch/nano_profiler.launch#L13)
     - [ ] workaround inside the client, by looking for a combination of "nan" and "prof" in all the node name list? see [here](./src/rosprofiler/host_monitor_nano.py#L43) and [here](./src/client.py#L24) for reference
@@ -106,6 +108,8 @@ trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.p
 ## Nico Potential Fixes
 
 * [ ] check if the `_update_node_list`- function, [here](./src/rosprofiler/profiler_Nano.py#L148) does not work due to mavros length!
+    * [ ] should not -since it is only one node, just running a fuckton of topics
+* [ ] Check what unit the Nano power logging is in - see tegratsats
 
 
 ## NICO Nice-to-Haves

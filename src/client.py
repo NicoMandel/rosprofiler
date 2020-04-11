@@ -110,8 +110,8 @@ class ProfileClient:
             swap_used: mean, std, max
             swap_available: mean, std, min
         """
-
-        if msg.ipaddress in self.host_dict.keys():
+        key = msg.hostname.lower()
+        if key in self.host_dict.keys():
             temp_df = pd.DataFrame(columns=self.extracted_statistics_host).set_index("Time")
 
             # Times converted to milisecond durations
@@ -148,8 +148,8 @@ class ProfileClient:
             temp_df.at[t, "Swap Available std"] = (int(pd.np.floor(msg.swap_avail_std)) >> 20)
             temp_df.at[t, "Swap Available min"] = (int(pd.np.floor(msg.swap_avail_min)) >> 20)
 
-            target_df = self.host_df_dict[msg.ipaddress]
-            self.host_df_dict[msg.ipaddress] = self.concat_df(target_df, temp_df)
+            target_df = self.host_df_dict[key]
+            self.host_df_dict[key] = self.concat_df(target_df, temp_df)
 
        
     def node_callback(self, msg):
