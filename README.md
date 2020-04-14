@@ -117,6 +117,7 @@ trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.p
 1. udp port usage, to see how much mavlink actually uses, check [this documentation](https://psutil.readthedocs.io/en/latest/#psutil.net_connections)
     * ` For example 9600 8 N 1 uses 10 bits per word (1 start bit, 8 data bits, and 1 stop bit). Each word would take 10/9600 = 1041.66666666 microsecs`  to monitor whether we get channel overload on the udp port
     * use a switch in the launch file and put this into a separate file
+    * may be more difficult than anticipated
 2. Heat dissipation sensing, see [documentation](https://psutil.readthedocs.io/en/latest/#psutil.sensors_temperatures)
 
 # Stuff from the original documentation
