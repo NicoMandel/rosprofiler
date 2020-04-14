@@ -17,7 +17,7 @@ class ProfileClient:
         # Get parameters from server to find out what to track and where to write it
         host_dict = rospy.get_param('hosts', default=None)
         
-        if host_dict is None:
+        if not host_dict:
             self.host_dict = {}
             rospy.logwarn("No Machines specified. Logging all nodes on all machines")
             hosts = rosnode.get_machines_by_nodes() # this ALWAYS returns a legal lookup
@@ -51,6 +51,13 @@ class ProfileClient:
                             elif key in host:
                                 self.host_dict[machine] = host_dict[key]
                                 break
+                            try:
+                                if not self.host_dict[machine]:          # Safety, in case we have defined the host as "false" - to log all nodes
+                                    nodes = rosnode.get_nodes_by_machine(machine)
+                                    self.host_dict[machine] = nodes.lower().split("/")[-2:-1]
+                                    rospy.loginfo("No Nodes specified for Machine {}, Logging all nodes: {}.".format(machine, self.host_dict[machine]))
+                            except KeyError:
+                                pass
                         break
 
         # Setup work for the hosts

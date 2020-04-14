@@ -88,30 +88,32 @@ class Profiler(object):
         if not host_dict:
             raise rospy.ROSInitException("Nothing to log specified")
         else:
-           self._local_ip = rosgraph.network.get_local_address()
-           self._host = rosgraph.network.get_host_name()
+            self._local_ip = rosgraph.network.get_local_address()
+            self._host = rosgraph.network.get_host_name()
 
-        if self._local_ip in host_dict.keys():
-            self._host_monitor = HostMonitor()
+            for key in host_dict.keys():
+                if (str(key).lower() in self._local_ip) or (str(key).lower() in self._host.lower()):
+                    self._host_monitor = HostMonitor()
+                    self.nodelist = host_dict[key]                
 
-            self._node_publisher = rospy.Publisher('node_statistics', NodeStatisticsNano, queue_size=10)
-            self._host_publisher = rospy.Publisher('host_statistics', NanoStatistics, queue_size=10)
+                    # Processes we are watching
+                    self.nodelist = host_dict[key]    
+                    if not self.nodelist:
+                        rospy.logwarn("No nodes specified. Looking for All Nodes on the host")
+                        self.nodelist = rosnode.get_nodes_by_machine(self._host) #very expensive lookup 
+                    
 
-            # Processes we are watching
-            self.nodelist = host_dict[self._local_ip]
-            if not self.nodelist:
-                rospy.logwarn("No nodes specified. Looking for All Nodes on the host")
-                self.nodelist = rosnode.get_nodes_by_machine(self._host) #very expensive lookup 
-            self._nodes = dict()
-
-            # Timers Rates
-            sample_rate = rospy.get_param("sampleRate", default=0.2)
-            self.sample_rate = rospy.Duration(sample_rate)
-            update_rate = rospy.get_param("updateRate", default=2)
-            self.update_rate = rospy.Duration(update_rate)
-        else:
-            raise rospy.ROSInitException("Own IP not in host_dict. Aborting and closing node")
-
+                    # Timers Rates
+                    self._node_publisher = rospy.Publisher('node_statistics', NodeStatisticsNano, queue_size=10)
+                    self._host_publisher = rospy.Publisher('host_statistics', NanoStatistics, queue_size=10)
+                    sample_rate = rospy.get_param("sampleRate", default=0.2)
+                    self.sample_rate = rospy.Duration(sample_rate)
+                    update_rate = rospy.get_param("updateRate", default=2)
+                    self.update_rate = rospy.Duration(update_rate)
+                    self._nodes = dict()
+                else:
+                    raise rospy.ROSInitException("Own Device not in host_dict. Aborting and closing node")
+       
     def start(self):
         """ Starts the Profiler
         :raises: ROSInitException when /enable_statistics has not been set to True

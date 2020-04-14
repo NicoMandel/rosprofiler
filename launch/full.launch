@@ -1,0 +1,5 @@
+<launch>
+    <param name="enable_statistics" value="true"/>
+    <node pkg="rosprofiler" type="rosprofilerNano" name="rosprofiler$(optenv ROS_IP)" output="screen"/>
+    <node pkg="rosprofiler" type="rosgrapher" name="rosgrapher" output="screen"/>
+</launch>
