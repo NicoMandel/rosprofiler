@@ -85,14 +85,14 @@ class Profiler(object):
 
         # Data Structure for collecting information about the host
         host_dict = rospy.get_param('hosts', default=None)
-        if not host_dict:
+        if host_dict is None:
             raise rospy.ROSInitException("Nothing to log specified")
         else:
             self._local_ips = rosgraph.network.get_local_addresses()
             self._host = rosgraph.network.get_host_name()
 
             for key in host_dict.keys():
-                if (str(key).lower() in ip for ip in self._local_ips) or (str(key).lower() in self._host.lower()):
+                if (key in ip for ip in self._local_ips) or (key.lower() in self._host.lower()):
                     self._host_monitor = HostMonitor()
 
                     self.nodelist = host_dict[key]                
@@ -110,8 +110,9 @@ class Profiler(object):
                     update_rate = rospy.get_param("updateRate", default=2)
                     self.update_rate = rospy.Duration(update_rate)
                     self._nodes = dict()
-                else:
-                    raise rospy.ROSInitException("Own Device not in host_dict. Aborting and closing node")
+                    break
+        if self.nodelist is None:
+            raise rospy.ROSInitException("Own Device not in host_dict. Aborting and closing node")
        
     def start(self):
         """ Starts the Profiler
