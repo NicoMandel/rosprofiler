@@ -157,15 +157,16 @@ class Profiler(object):
     def _update_node_list(self, event=None):
         """ Contacts the master using xmlrpc to determine what processes to watch """
         nodenames = rosnode.get_nodes_by_machine(self._host) # very expensive lookup btw
-        nnames  = []
-        for log_name in self.nodelist:
-            for name in nodenames:
-                if log_name.lower() in name.lower():
-                    nnames.append(name)
-        nodenames = nnames
-        rospy.loginfo("Logging nodes: {}".format(nodenames))
-        # nodenames = [name for name in nodenames for item in self.nodelist if item.lower() in name.lower()]
-        
+        # nnames  = []
+        # for log_name in self.nodelist:
+        #     for name in nodenames:
+        #         if log_name.lower() in name.lower():
+        #             nnames.append(name)
+        # nodenames = nnames
+        # rospy.loginfo("Logging nodes: {}".format(nodenames))
+        if len(self.nodelist) != len(nodenames):
+            nodenames = [name for name in nodenames for item in self.nodelist if item.lower() in name.lower()]
+        rospy.loginfo("logging nodes: {}".format(nodenames))
         # Lock data structures while making changes
         with self._lock:
             # Remove Node monitors for processes that no longer exist
