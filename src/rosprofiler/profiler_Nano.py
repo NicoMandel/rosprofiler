@@ -89,11 +89,11 @@ class Profiler(object):
         if host_dict is None:
             raise rospy.ROSInitException("Nothing to log specified")
         else:
-            _local_ips = rosgraph.network.get_local_addresses()
+            _local_ip = rosgraph.network.get_local_address() # This also specifies the address of the Nano!
             self._host = rosgraph.network.get_host_name()
 
             for key in host_dict.keys():
-                if (key in ip for ip in _local_ips) or (key.lower() in self._host.lower()):
+                if (key in ip for ip in _local_ip) or (key.lower() in self._host.lower()):
                     self._host_monitor = HostMonitor()
 
                     self.nodelist = host_dict[key]
