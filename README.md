@@ -29,7 +29,7 @@ Check with client.py whether the changes are the same noted down in there
         * [x] for the host_statistics definitely want one that will show the total used space
         * [x] for the node_statistics want one that will show the allocated __and__ used space
 - [x] The cpu_percent part of the [node_statistics, L. 56](./src/rosprofiler/node_monitor.py#L56) may be very misleading - check these and find if there is maybe an absolute value we can use - or if we have to rely on the host_statistics value to then calculate the total usage
-- [ ] Run a test example with the topic and BW timer 
+- [x] Run a test example with the topic and BW timer 
 
 
 - [x] Create a toy example with listener / talker
@@ -58,9 +58,11 @@ Check with client.py whether the changes are the same noted down in there
                     * [x] Host logical CPU count - see [documentation](https://psutil.readthedocs.io/en/latest/#psutil.cpu_count)
                 * [x] GPU
                     * [x] Omit usage, because we do not target the GPU (yet), however the extension would be trivial
-                * [ ] Timing - on ROS topics
-                    * [ ] Bandwith utilization
-                    * [ ] Frequency - hard limit
+                * [x] Timing - on ROS topics
+                    * [x] Bandwith utilization
+                    * [x] Frequency - hard limit
+                    * [ ] The `get_topic_list()` function is pretty difficult to figure out. [Documentation on Format of rostopic.get_topic_list()](http://docs.ros.org/melodic/api/rostopic/html/rostopic-pysrc.html#get_topic_list)
+                    * [x] use [this one](http://docs.ros.org/melodic/api/rospy/html/rospy.client-module.html#get_published_topics). is easier
             * [x] Capacity - how much can it access
                 * [x] CPU - can be calculated from the cpu_count and the Host CPU percent
                 * [x] Memory
@@ -70,7 +72,7 @@ Check with client.py whether the changes are the same noted down in there
                         * [x] **MINIMUM** [available virtual memory](https://psutil.readthedocs.io/en/latest/#psutil.virtual_memory) - conservative measure. This excludes swap
                         * [x] Swap in bytes 
                             * [x] available
-                * [ ] Timing - on ROS topics
+                * [ ] Timing - on ROS topics - has to be done in postprocessing
                     * [ ] Bandwidth Limits - see documentation
                         * [ ] Wifi / Ethernet
                         * [ ] Serial, see below
@@ -83,7 +85,7 @@ Check with client.py whether the changes are the same noted down in there
                 * [x] Host Memory
                     * [x] Shared - [documentation](https://psutil.readthedocs.io/en/latest/#psutil.virtual_memory)
 
-- [ ] Implement the option to change the frequency of monitoring.
+- [x] Implement the option to change the frequency of monitoring.
     * [ ] [here](./scripts/rosprofilerNano#L52) using command line arguments 
     * [x] [here](./src/rosprofiler/profiler_Nano.py#L71) using ROS parameters
     * [ ] for the [timing](./src/timing.py#L13) Script
@@ -95,9 +97,9 @@ Check with client.py whether the changes are the same noted down in there
      * [x] Host Statistics Nano, see [here](./src/client.py#L49) and [here](./src/client.py#L48)
      * [x] Node Statistics Nano, see [here](./src/client.py#L75) and [here](./src/client.py#L61)
      * [x] which nodes to log is double covered, see [here](./src/client.py#L) and [here](./src/rosprofiler/profiler_Nano.py#L142)
-- [ ] Launch file for starting timing logging together with client logging
+- [x] Launch file for starting timing logging together with client logging
     - [x] resolve namespace grouping issues, topic initialisation etc.
-    * [ ] Include Timing node 
+    * [x] Include Timing node 
 - [x] Find a way to profile the rosprofiling node on the client
     - [x] cannot append to [rosparam list](./config/profileparams.yaml)
     - [ ] command line argument with [this syntax](./launch/nano_profiler.launch#L13)

@@ -1,7 +1,7 @@
 <launch>
     <!-- Arguments to change -->
     <arg name="sim_case" default="1"/>
-    <rosparam command="load" file="$(find rosprofiler)/config/params_test.yaml"/>
+    <rosparam command="load" file="$(find rosprofiler)/config/profileparams.yaml"/>
 
     <!-- Arguments that are fixed -->
     <arg name="machine" default="Nano"/>

@@ -21,6 +21,8 @@
 
     <!-- Monitoring Node -->
     <node pkg="rosprofiler" name="profiling_client" type="client.py" output="screen"/>
+    <!-- Topic Monitoring Node -->
+    <node pkg="rosprofiler" name="timing_client" type="timing.py" output="screen"/>
 
 
 </launch>

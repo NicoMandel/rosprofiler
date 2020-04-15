@@ -1,14 +1,14 @@
 # these are the things that our rosprofile client will read and determine what it will inspect
 hosts: 
-    "192.168.1.120":
-        - "listen"
-        - "profile"
-    "192.168.1.148":
-        - "talk"
+    "192.168.1.120": False
+
+    # "192.168.1.148":
+    #     - "talk"
 
 topics:
     # - "chatter_loopback"
-    - "chatter"
+    - "knowledgebase"
+    - "mavros/setpoint_position/local"
 
 sampleRate: 0.2
 updateRate: 2

@@ -1,11 +1,16 @@
 # these are the things that our rosprofile client will read and determine what it will inspect
 hosts: 
-    "192.168.1.120": false
+    "192.168.1.120":
+        - "listen"
+        - "profile"
     # "192.168.1.148":
     #     - "talk"
 
 topics:
-    - "mavros/"
+    - "chatter"
+
+# namespaces:
+#     - ""
 
 sampleRate: 0.2
 updateRate: 2

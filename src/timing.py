@@ -13,7 +13,8 @@ class Timinglogger:
     def __init__(self, topic, metrics, window_size=1000, filter_expr=None, timer_freq=0.5, filename="freqfile"):
         """ A topic logger class, which will initiate ROS BW and HZ loggers for the specified topic
         """
-        self.topic = topic.replace('/','')
+        # self.topic = topic.replace('/','')
+        self.topic = topic
         self.Metrics = metrics 
 
         self.rthz = ROSTopicHz(window_size, filter_expr=filter_expr)
@@ -26,7 +27,6 @@ class Timinglogger:
         # Timer to repeatedly log the values. Documentation here: http://docs.ros.org/melodic/api/rospy/html/rospy.timer.Timer-class.html
         self.timer = rospy.Timer(rospy.Duration(timer_freq), self.timer_callback)
         self.logging_df = pd.DataFrame(columns=self.Metrics).set_index("Time")
-
 
     def timer_callback(self, event): # has to take a rospy.TimerEvent, see documentation
         """
@@ -60,9 +60,9 @@ class Timinglogger:
             temp_df.at[t, "BW_Max"] = pd.np.max(bw_sizes)
             temp_df.at[t, "BW_Min"] = pd.np.min(bw_sizes)
 
-            self.logging_df = pd.concat([self.logging_df, temp_df])
-            rospy.loginfo("Bottom end of the table for: {}".format(self.topic))
-            rospy.loginfo(self.logging_df.tail())
+            self.logging_df = pd.concat([self.logging_df, temp_df], sort=False)
+            # rospy.loginfo("Bottom end of the table for: {}".format(self.topic))
+            # rospy.loginfo(self.logging_df.tail())
 
 class LoggerList:
 
@@ -71,9 +71,17 @@ class LoggerList:
         self.filename = rospy.get_param("filename", default="default")
         self.metrics = ["Time", "HZ_Samples", "HZ_Mean", "HZ_Max_Delta", "HZ_Min_Delta", "HZ_Std Dev_Delta", "BW_Samples", "BW_Bytes / sec", "BW_Mean", "BW_Max", "BW_Min"]
         self.loglist = []
+        all_topics = rospy.get_published_topics()
+        all_ts = []
+        for topic, t_type in all_topics:
+                all_ts.append(topic)
         for topic in list_of_topics:
-            self.loglist.append(Timinglogger(topic, self.metrics))
-            rospy.loginfo("Logging enabled for topic: {}".format(topic))
+            for name in all_ts:                   # Topic format see documentation in README
+                if topic in name:
+                    self.loglist.append(Timinglogger(name, self.metrics))
+                    rospy.loginfo("Logging enabled for topic: {}".format(name))
+        
+        # Shutdown hook
         rospy.on_shutdown(self.writeToFile)
 
         
@@ -88,17 +96,19 @@ class LoggerList:
             for topic in self.loglist:
                 topic.timer.shutdown()
                 if topic.logging_df.shape[0] > 2:
-                    topic.logging_df.to_excel(writer, sheet_name=topic.topic)
+                    topic.logging_df.to_excel(writer, sheet_name=topic.topic.replace('/','_'))
 
 
 if __name__=="__main__":
     try:
         rospy.init_node("Freq_logger")
-        topics = rospy.get_param("/topics", default=None)
+        topics = rospy.get_param("topics", default=None)
         if topics is None:
             rospy.logwarn("No topics specified. Looking for All topics")
-            topics = rostopic.get_topic_list()
-
+            ts = rospy.get_published_topics()   # this gives all published topics as a tuple with the types
+            topics = []
+            for topic, t_type in ts:
+                topics.append(topic)
         # use the wrapper list holding object
         LL = LoggerList(topics)
     except rospy.ROSInitException as e:
