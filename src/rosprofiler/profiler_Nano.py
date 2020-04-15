@@ -166,7 +166,6 @@ class Profiler(object):
         # rospy.loginfo("Logging nodes: {}".format(nodenames))
         if len(self.nodelist) != len(nodenames):
             nodenames = [name for name in nodenames for item in self.nodelist if item.lower() in name.lower()]
-        rospy.loginfo("logging nodes: {}".format(nodenames))
         # Lock data structures while making changes
         with self._lock:
             # Remove Node monitors for processes that no longer exist

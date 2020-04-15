@@ -6,12 +6,9 @@
     <machine name="$(arg machine)" address="nano-wired" user="nico" env-loader="/home/nico/catkin_ws/devel/env_new.sh" timeout="10.0" default="false" />
 
     <!-- Monitoring Namespace -->
-    <rosparam command="load" file="$(find rosprofiler)/config/profileparams.yaml"/>
+    <rosparam command="load" file="$(find rosprofiler)/config/params_test.yaml"/>
     <param name="filename" type="string" value="case_$(arg freq)"/>
     <node pkg="rosprofiler" type="rosprofilerNano" name="$(anon rosprofiler)" output="screen"/>
-
-    <!-- Monitoring Node -->
-    <!-- <node pkg="rosprofiler" name="profiling_client" type="client.py" output="screen"/> -->
 
     <node machine="$(arg machine)" pkg="rosprofiler" type="rosprofilerNano" name="rosprofiler_$(arg machine)" output="screen"/>
 
@@ -21,6 +18,9 @@
     <!-- Host Nodes -->
     <node pkg="beginner_tutorials" name="talker" type="talker" output="screen"/>
     <node pkg="rosprofiler" type="rosgrapher" name="rosgrapher" output="screen"/>
+
+    <!-- Monitoring Node -->
+    <node pkg="rosprofiler" name="profiling_client" type="client.py" output="screen"/>
 
 
 </launch>

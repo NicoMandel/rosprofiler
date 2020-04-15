@@ -101,14 +101,14 @@ Check with client.py whether the changes are the same noted down in there
 - [x] Find a way to profile the rosprofiling node on the client
     - [x] cannot append to [rosparam list](./config/profileparams.yaml)
     - [ ] command line argument with [this syntax](./launch/nano_profiler.launch#L13)
-    - [ ] workaround inside the client, by looking for a combination of "nan" and "prof" in all the node name list? see [here](./src/rosprofiler/host_monitor_nano.py#L43) and [here](./src/client.py#L24) for reference
+    - [x] workaround inside the client, by looking for a combination of "nan" and "prof" in all the node name list? see [here](./src/rosprofiler/host_monitor_nano.py#L43) and [here](./src/client.py#L24) for reference
 
 trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.py#L15@d05115ea722b46f9e84e259117c3ed09fc327460)
 
 ## Nico Potential Fixes
 
-* [ ] check if the `_update_node_list`- function, [here](./src/rosprofiler/profiler_Nano.py#L148) does not work due to mavros length!
-    * [ ] should not -since it is only one node, just running a fuckton of topics
+* [x] check if the `_update_node_list`- function, [here](./src/rosprofiler/profiler_Nano.py#L148) does not work due to mavros length!
+    * [x] should not -since it is only one node, just running a fuckton of topics
 * [x] Check what unit the Nano power logging is in - **MW** - see [here](https://forums.developer.nvidia.com/t/power-consumption-monitoring/73608/10)
 
 
@@ -117,7 +117,7 @@ trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.p
 1. udp port usage, to see how much mavlink actually uses, check [this documentation](https://psutil.readthedocs.io/en/latest/#psutil.net_connections)
     * ` For example 9600 8 N 1 uses 10 bits per word (1 start bit, 8 data bits, and 1 stop bit). Each word would take 10/9600 = 1041.66666666 microsecs`  to monitor whether we get channel overload on the udp port
     * use a switch in the launch file and put this into a separate file
-    * may be more difficult than anticipated
+    * Cannot work - due to socket locking, the traffic could only be monitored through other processes. disregard (for now)
 2. Heat dissipation sensing, see [documentation](https://psutil.readthedocs.io/en/latest/#psutil.sensors_temperatures)
 
 # Stuff from the original documentation

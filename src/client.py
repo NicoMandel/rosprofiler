@@ -51,18 +51,9 @@ class ProfileClient:
                             elif key in host:
                                 self.host_dict[machine] = host_dict[key]
                                 break
-                            try:
-                                if not self.host_dict[machine]:          # Safety, in case we have defined the host as "false" - to log all nodes
-                                    nodes = rosnode.get_nodes_by_machine(machine)
-                                    self.host_dict[machine] = nodes.lower().split("/")[-2:-1]
-                                    rospy.loginfo("No Nodes specified for Machine {}, Logging all nodes: {}.".format(machine, self.host_dict[machine]))
-                            except KeyError:
-                                pass
                         break
         
-        # Safeguard Log
-        for key, values in self.host_dict.items():
-            rospy.loginfo("Logging nodes: {} for host: {}".format(values, key))
+        rospy.wait_for_message("host_statistics", NanoStatistics)
 
         # Setup work for the hosts
         self.extracted_statistics_host = ["Time", "Duration", "Samples", "CPU Count", "Power",
@@ -77,8 +68,12 @@ class ProfileClient:
 
         # Assign a Dataframe to each host 
         self.host_df_dict = {}
-        for host in self.host_dict.keys():
+        for host, nodes in self.host_dict.items():
             self.host_df_dict[host] = host_df.copy(deep=True)
+            if not nodes:
+                ns = rosnode.get_nodes_by_machine(host)
+                self.host_dict[host] = ns
+                rospy.logwarn("No Nodes specified for host: {}. Getting all nodes: {}".format(host, ns))
         
         # Setup work for the Nodes
         self.extracted_statistics_node = ["Time", "Duration", "Samples", "CPU Count",
@@ -97,7 +92,6 @@ class ProfileClient:
         
         
         # Waiting for the topic to get going and setting up shutdown function
-        rospy.wait_for_message("host_statistics", NanoStatistics)
         rospy.on_shutdown(self.writeToFile)
 
         # Subscribers last - to not mess up when messages come in before everything is set up
@@ -170,7 +164,7 @@ class ProfileClient:
         for key, values in self.host_dict.items():
             if key in msg.uri.lower():          # this uri is either the IP or the ros_hostname
                 for value in values:
-                    if value in msg.node.lower():    
+                    if value in msg.node:    
                         # 0. initialise an empty dataframe
                         temp_df = pd.DataFrame(columns=self.extracted_statistics_node).set_index("Time")
                         
