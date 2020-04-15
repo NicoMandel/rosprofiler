@@ -1,0 +1,20 @@
+<launch>
+    <arg name="machine" default="Nano"/>
+    <param name="/enable_statistics" value="true"/>
+    <arg name="sim_case" default="1"/>
+    <machine name="$(arg machine)" address="nano-wired" user="nico" env-loader="/home/nico/catkin_ws/devel/env_new.sh" timeout="10.0" default="false" />
+
+    <!-- Stuff for the profiler -->
+    <include file="$(find rosprofiler)/launch/nano_profiler.launch">
+        <arg name="machine" value="$(arg machine)"/>
+        <arg name="sim_case" value="$(arg sim_case)"/>
+    </include>
+
+    <!-- Stuff for the hitl -->
+    <include file="$(find rosprofiler)/launch/base_hitl_full.launch">
+        <arg name="machine" value="$(arg machine)"/>
+        <arg name="sim_case" value="$(arg sim_case)"/>
+    </include>
+
+
+</launch>

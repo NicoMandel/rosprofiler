@@ -59,6 +59,10 @@ class ProfileClient:
                             except KeyError:
                                 pass
                         break
+        
+        # Safeguard Log
+        for key, values in self.host_dict.items():
+            rospy.loginfo("Logging nodes: {} for host: {}".format(values, key))
 
         # Setup work for the hosts
         self.extracted_statistics_host = ["Time", "Duration", "Samples", "CPU Count", "Power",

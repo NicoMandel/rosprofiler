@@ -84,35 +84,42 @@ class Profiler(object):
         self._graphupdate_timer = None
 
         # Data Structure for collecting information about the host
+        self._host_monitor = None
         host_dict = rospy.get_param('hosts', default=None)
         if host_dict is None:
             raise rospy.ROSInitException("Nothing to log specified")
         else:
-            self._local_ips = rosgraph.network.get_local_addresses()
+            _local_ips = rosgraph.network.get_local_addresses()
             self._host = rosgraph.network.get_host_name()
 
             for key in host_dict.keys():
-                if (key in ip for ip in self._local_ips) or (key.lower() in self._host.lower()):
+                if (key in ip for ip in _local_ips) or (key.lower() in self._host.lower()):
                     self._host_monitor = HostMonitor()
 
-                    self.nodelist = host_dict[key]                
+                    self.nodelist = host_dict[key]
+                    rospy.loginfo("Found key {} in host {}.".format(
+                        key, self._host
+                    ))                
                     # Processes we are watching
-                    if not self.nodelist:
-                        rospy.logwarn("No nodes specified. Looking for All Nodes on the host")
+                    if self.nodelist is False:
+                        rospy.logwarn("No nodes specified. Looking for All Nodes on {}".format(self._host))
                         self.nodelist = rosnode.get_nodes_by_machine(self._host) #very expensive lookup 
-                    
+                    rospy.loginfo("Logging Nodes: {}".format(self.nodelist))
 
                     # Timers Rates
                     self._node_publisher = rospy.Publisher('node_statistics', NodeStatisticsNano, queue_size=10)
                     self._host_publisher = rospy.Publisher('host_statistics', NanoStatistics, queue_size=10)
+                    
                     sample_rate = rospy.get_param("sampleRate", default=0.2)
                     self.sample_rate = rospy.Duration(sample_rate)
                     update_rate = rospy.get_param("updateRate", default=2)
                     self.update_rate = rospy.Duration(update_rate)
                     self._nodes = dict()
                     break
-        if self.nodelist is None:
-            raise rospy.ROSInitException("Own Device not in host_dict. Aborting and closing node")
+        
+        # Sanity check if we actually got to assign the loop before
+        if self._host_monitor is None:
+            raise rospy.ROSInitException("Own Device not found in dictionary. Aborting and closing node")
        
     def start(self):
         """ Starts the Profiler
@@ -150,8 +157,15 @@ class Profiler(object):
     def _update_node_list(self, event=None):
         """ Contacts the master using xmlrpc to determine what processes to watch """
         nodenames = rosnode.get_nodes_by_machine(self._host) # very expensive lookup btw
-        if len(nodenames) != len(self.nodelist):
-            nodenames = [name for name in nodenames for item in self.nodelist if item in name]
+        nnames  = []
+        for log_name in self.nodelist:
+            for name in nodenames:
+                if log_name.lower() in name.lower():
+                    nnames.append(name)
+        nodenames = nnames
+        rospy.loginfo("Logging nodes: {}".format(nodenames))
+        # nodenames = [name for name in nodenames for item in self.nodelist if item.lower() in name.lower()]
+        
         # Lock data structures while making changes
         with self._lock:
             # Remove Node monitors for processes that no longer exist

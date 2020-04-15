@@ -3,8 +3,10 @@
 
     <!-- Setup Arguments for the machine -->
     <arg name="machine" default="Nano"/>
-    <machine name="$(arg machine)" address="nano-wired" user="nico" env-loader="/home/nico/catkin_ws/devel/env_catkin.sh" timeout="10.0" default="false" />
-    <param name="enable_statistics" value="true"/>
+    <arg name="sim_case" default="1"/>
+
+    <!-- <machine name="$(arg machine)" address="nano-wired" user="nico" env-loader="/home/nico/catkin_ws/devel/env_catkin.sh" timeout="10.0" default="false" /> -->
+    <!-- <param name="enable_statistics" value="true"/> -->
 
     <arg name="x" default="0"/>
     <arg name="y" default="0"/>
@@ -29,7 +31,6 @@
     <arg name="log_output" default="screen" />
     <arg name="fcu_protocol" default="v2.0" />
     
-    <arg name="sim_case" default="1"/>
     <arg name="image_topic" value="/$(arg vehicle)/usb_cam/image_raw"/>
     <arg name="camera_info_topic" value="/$(arg vehicle)/usb_cam/camera_info"/>
 
@@ -49,9 +50,6 @@
         <rosparam command="load" file="$(optenv CATKIN_BASE /home/nicolas/catkin_ws/src)/mavros/mavros/launch/px4_config.yaml" />
     </node>
 
-    <!-- ############ These need to be adapted -->
-    <!-- <arg name="pluginlists_yaml" value="$(find mavros)/launch/px4_pluginlists.yaml" /> -->
-    <!-- <arg name="config_yaml" value="$(find mavros)/launch/px4_config.yaml" /> -->
     <arg name="init_wps" default="$(find knowledge_server)/config/Initial_WPs.csv"/>  
     
     <!-- 1. Launch a Gazebo File with the right settings -->
@@ -97,9 +95,6 @@
     <!-- 4.4 The Gazebo spawn file -->
     <node pkg="knowledge_server" name="$(anon marker_spawn)" type="gazebo_spawning.py" output="screen" args="$(arg sim_case)"/>
 
-    <!-- 4.5 An RVIZ file -->
-    <!-- <node type="rviz" name="rviz" pkg="rviz" args="-d $(find aruco_client)/config/rviz_config.rviz" /> -->
-
     <!-- 4.6 the Knowledgebase shwizzle -->
     <group ns="knowledgebase">
         <rosparam command="load" file="$(find knowledge_server)/config/parameters.yaml"/>
@@ -109,11 +104,5 @@
         <node pkg="knowledge_server" name="map_server" type="word2vec_mapping.py" output="screen"/>
         <node pkg="knowledge_server" name="navigator" type="word2vec_navigation.py" output="screen" args="$(arg init_wps)"/>
     </group>
-
-
-    <!-- Profiling Nodes -->
-    <node machine="$(arg machine)" pkg="rosprofiler" type="rosprofiler" name="rosprofiler_$(arg machine)" output="screen"/>
-    <node pkg="rosprofiler" type="rosprofiler" name="$(anon rosprofiler)" output="screen"/>
-    <node pkg="rosprofiler" type="rosgrapher" name="rosgrapher" output="screen"/>
 
 </launch>

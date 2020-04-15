@@ -11,7 +11,7 @@
     <node pkg="rosprofiler" type="rosprofilerNano" name="$(anon rosprofiler)" output="screen"/>
 
     <!-- Monitoring Node -->
-    <node pkg="rosprofiler" name="profiling_client" type="client.py" output="screen"/>
+    <!-- <node pkg="rosprofiler" name="profiling_client" type="client.py" output="screen"/> -->
 
     <node machine="$(arg machine)" pkg="rosprofiler" type="rosprofilerNano" name="rosprofiler_$(arg machine)" output="screen"/>
 
