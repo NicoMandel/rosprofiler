@@ -7,7 +7,7 @@ hosts:
 
 topics:
     # - "chatter_loopback"
-    - "knowledgebase"
+    - "knowledgebase/"
     - "mavros/setpoint_position/local"
 
 sampleRate: 0.2

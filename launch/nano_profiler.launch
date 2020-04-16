@@ -16,5 +16,7 @@
     <node pkg="rosprofiler" type="rosgrapher" name="rosgrapher" output="screen"/>
     <node pkg="rosprofiler" type="rosprofilerNano" name="$(anon rosprofiler)" output="screen"/>
     <node pkg="rosprofiler" name="profiling_client" type="client.py" output="screen"/>
+    <node pkg="rosprofiler" name="timing_client" type="timing.py" output="screen"/>
+
 
 </launch>

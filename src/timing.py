@@ -10,11 +10,11 @@ from copy import deepcopy
 
 class Timinglogger:
 
-    def __init__(self, topic, metrics, window_size=1000, filter_expr=None, timer_freq=0.5, filename="freqfile"):
+    def __init__(self, topic, metrics, window_size=100, filter_expr=None, timer_freq=0.5, filename="freqfile"):
         """ A topic logger class, which will initiate ROS BW and HZ loggers for the specified topic
         """
         # self.topic = topic.replace('/','')
-        self.topic = topic
+        # self.topic = topic
         self.Metrics = metrics 
 
         self.rthz = ROSTopicHz(window_size, filter_expr=filter_expr)
@@ -43,7 +43,7 @@ class Timinglogger:
             hz_vals = pd.np.asarray(self.rthz.times)
             t = deepcopy(self.rthz.msg_tn)
             if t is None:
-                t = rospy.Time.now().to_sec()
+                t = rospy.get_rostime().to_sec()
             temp_df.at[t, "HZ_Samples"] = hz_vals.shape[0]
             temp_df.at[t, "HZ_Mean"] = 1. / pd.np.mean(hz_vals)
             temp_df.at[t, "HZ_Max_Delta"] = pd.np.max(hz_vals)
@@ -54,7 +54,7 @@ class Timinglogger:
             bw_times = pd.np.asarray(self.rtbw.times)
             bw_sizes = pd.np.asarray(self.rtbw.sizes)
             total = pd.np.sum(bw_sizes)
-            temp_df.at[t, "BW_Bytes / sec"] = total /(t - bw_times[0])
+            temp_df.at[t, "BW_Bytes / sec"] = total /(bw_times[-1] - bw_times[0])
             temp_df.at[t, "BW_Samples"] = bw_sizes.shape[0]
             temp_df.at[t, "BW_Mean"] = pd.np.mean(bw_sizes)
             temp_df.at[t, "BW_Max"] = pd.np.max(bw_sizes)
@@ -66,23 +66,43 @@ class Timinglogger:
 
 class LoggerList:
 
-    def __init__(self, list_of_topics, filename="topics"):
+    def __init__(self, list_of_topics, update_rate, sample_rate):
         """ A Loggerlist object, which wraps many timing loggers. This also implements the writetoFile Funciton """
         self.filename = rospy.get_param("filename", default="default")
         self.metrics = ["Time", "HZ_Samples", "HZ_Mean", "HZ_Max_Delta", "HZ_Min_Delta", "HZ_Std Dev_Delta", "BW_Samples", "BW_Bytes / sec", "BW_Mean", "BW_Max", "BW_Min"]
-        self.loglist = []
-        all_topics = rospy.get_published_topics()
-        all_ts = []
-        for topic, t_type in all_topics:
-                all_ts.append(topic)
-        for topic in list_of_topics:
+        self.loglist = {}
+        self.topic_list = list_of_topics
+        all_topics = rospy.get_published_topics()          
+        
+        self.sample_rate =sample_rate
+        all_ts = [name for name, _ in all_topics]
+        # for topic, t_type in all_topics:
+        #         all_ts.append(topic)
+        for topic in self.topic_list:
             for name in all_ts:                   # Topic format see documentation in README
                 if topic in name:
-                    self.loglist.append(Timinglogger(name, self.metrics))
+                    self.loglist[name]= Timinglogger(name, self.metrics, timer_freq=self.sample_rate)
                     rospy.loginfo("Logging enabled for topic: {}".format(name))
-        
+
+        # update timer - in case of delayed topics
+        self.update_rate = rospy.Duration(update_rate)
+        self._topic_timer = rospy.Timer(self.update_rate, self.update_topic_list)
+
         # Shutdown hook
         rospy.on_shutdown(self.writeToFile)
+
+    def update_topic_list(self, event=None):
+        """ 
+        Function to update the topic list - in case of delayed topics
+        """
+        all_topics = rospy.get_published_topics()
+        all_ts = [name for name, _ in all_topics]
+        for topic in self.topic_list:
+            for name in all_ts:
+                if (topic in name) and (name not in self.loglist.keys()):
+                    self.loglist[name] = Timinglogger(name, self.metrics, timer_freq=self.sample_rate)
+                    rospy.loginfo("Logging enabled for topic: {}".format(name))
+            
 
         
     def writeToFile(self):
@@ -90,19 +110,23 @@ class LoggerList:
             Function to be called on shutdown. Stops timer and writes data to a file
         """
         parentDir = os.path.dirname(__file__)
-        fname = os.path.abspath(os.path.join(parentDir, '..','results',self.filename+'_timing.xlsx'))
+        fname = os.path.abspath(os.path.join(parentDir, '..','results',self.filename+'_timing'+'.xlsx'))
+        self._topic_timer.shutdown()
         with pd.ExcelWriter(fname) as writer:
             rospy.loginfo("Writing results to file: {}".format(fname))
-            for topic in self.loglist:
-                topic.timer.shutdown()
-                if topic.logging_df.shape[0] > 2:
-                    topic.logging_df.to_excel(writer, sheet_name=topic.topic.replace('/','_'))
+            for key, Logger in self.loglist.items():
+                # rospy.loginfo("logging results: {},: \n {}".format(key.replace('/',''), Logger.logging_df.tail()))
+                if Logger.logging_df.shape[0] > 2:
+                    Logger.logging_df.to_excel(writer, sheet_name=key.replace('/','_'))
+                Logger.timer.shutdown()
 
 
 if __name__=="__main__":
     try:
         rospy.init_node("Freq_logger")
-        topics = rospy.get_param("topics", default=None)
+        topics = rospy.get_param('topics', default=None)
+        update_rate = rospy.get_param("updateRate", default=2)
+        sample_rate = 0.5
         if topics is None:
             rospy.logwarn("No topics specified. Looking for All topics")
             ts = rospy.get_published_topics()   # this gives all published topics as a tuple with the types
@@ -110,7 +134,7 @@ if __name__=="__main__":
             for topic, t_type in ts:
                 topics.append(topic)
         # use the wrapper list holding object
-        LL = LoggerList(topics)
+        LL = LoggerList(topics, update_rate, sample_rate)
     except rospy.ROSInitException as e:
         rospy.logerr(e)
 

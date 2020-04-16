@@ -16,5 +16,8 @@
         <arg name="sim_case" value="$(arg sim_case)"/>
     </include>
 
+    <!-- 5. Shutdown file - listening to ensure shutdown happens -->
+    <node pkg="rosprofiler" name="shutdown" type="shutdown.py" output="screen" required="true"/>
+
 
 </launch>

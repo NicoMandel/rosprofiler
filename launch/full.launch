@@ -47,7 +47,6 @@
     <!-- 1.2 Host Nodes -->
     <node pkg="rosprofiler" type="rosgrapher" name="rosgrapher" output="screen"/>
     <node pkg="rosprofiler" type="rosprofilerNano" name="$(anon rosprofiler)" output="screen"/>
-    <!-- <node pkg="rosprofiler" name="profiling_client" type="client.py" output="screen"/> -->
  
     <!-- 2. Running Flight Stuff -->
     <node machine="$(arg machine)" pkg="mavros" type="mavros_node" name="mavros" required="$(eval not respawn_mavros)" clear_params="true" output="$(arg log_output)" respawn="$(arg respawn_mavros)">
@@ -116,7 +115,11 @@
     </group>
 
     <!-- 5. Shutdown file - listening to ensure shutdown happens -->
-    <node pkg="beginner_tutorials" name="shutdown" type="shutdown.py" output="screen" required="true"/>
+    <!-- Profiling Logger -->
+    <node pkg="rosprofiler" name="profiling_client" type="client.py" output="screen"/>
+    <node pkg="rosprofiler" name="shutdown" type="shutdown.py" output="screen" required="true"/>
+    <node pkg="rosprofiler" name="timing_client" type="timing.py" output="screen"/>
+
 
  
 
