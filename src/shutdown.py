@@ -9,11 +9,11 @@ from std_msgs.msg import Bool
 
 class signalHandler(object):
 
-    def __init__(self, topic="shutdown_signal"):
+    def __init__(self, topic="/shutdown_signal"):
         super().__init__()
         rospy.init_node("Shutdown_node")
         rospy.loginfo("Listening for shutdown signal on topic: {}".format(topic))
-        rospy.Subscriber(topic, Bool, callback=self.callback, queue_size=3)
+        rospy.Subscriber(topic, Bool, callback=self.callback, queue_size=10)
 
 
     def callback(self, msg):
