@@ -112,7 +112,7 @@ trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.p
 * [x] check if the `_update_node_list`- function, [here](./src/rosprofiler/profiler_Nano.py#L148) does not work due to mavros length!
     * [x] should not -since it is only one node, just running a fuckton of topics
 * [x] Check what unit the Nano power logging is in - **MW** - see [here](https://forums.developer.nvidia.com/t/power-consumption-monitoring/73608/10)
-
+* [ ] Adding a file which will shutdown the entire process - see [here](./src/shutdown.py)
 
 ## NICO Nice-to-Haves
 

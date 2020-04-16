@@ -115,6 +115,9 @@
         <node pkg="knowledge_server" name="navigator" type="word2vec_navigation.py" output="screen" args="$(arg init_wps)"/>
     </group>
 
+    <!-- 5. Shutdown file - listening to ensure shutdown happens -->
+    <node pkg="beginner_tutorials" name="shutdown" type="shutdown.py" output="screen" required="true"/>
+
  
 
 </launch>
