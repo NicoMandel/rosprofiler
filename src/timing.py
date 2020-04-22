@@ -117,7 +117,8 @@ class LoggerList:
             for key, Logger in self.loglist.items():
                 # rospy.loginfo("logging results: {},: \n {}".format(key.replace('/',''), Logger.logging_df.tail()))
                 if Logger.logging_df.shape[0] > 2:
-                    Logger.logging_df.to_excel(writer, sheet_name=key.replace('/','_'))
+                    sheet_name = (key[:29]) if len(key) > 30 else key
+                    Logger.logging_df.to_excel(writer, sheet_name=sheet_name.replace('/','_'))
                 Logger.timer.shutdown()
 
 

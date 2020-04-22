@@ -1,8 +1,14 @@
 # these are the things that our rosprofile client will read and determine what it will inspect
 hosts: 
-    "192.168.1.120": False
+    # "192.168.1.120": False
 
-    # "192.168.1.148":
+    "SEF-PA144858": 
+        - "knowledgebase"
+        - "mavros"
+        - "ml_"
+        - "profile"
+        - "wp_node"
+        - "timing_cl"
     #     - "talk"
 
 topics:

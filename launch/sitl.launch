@@ -1,0 +1,32 @@
+<launch>
+    <param name="/enable_statistics" value="true"/>
+    <arg name="sim_case" default="1"/>
+    <arg name="init_wps" default="$(find knowledge_server)/config/Initial_WPs.csv"/>
+
+
+    <!-- Stuff for the sitl -->
+    <include file="$(find aruco_client)/launch/word2vec_barebones.launch">
+        <arg name="sim_case" value="$(arg sim_case)"/>
+    </include>
+
+    <node pkg="aruco_client" type="wp_node" name="wp_node" output="screen"/>
+    <!-- The Knowledgebase shwizzle -->
+    <group ns="knowledgebase">
+        <rosparam command="load" file="$(find knowledge_server)/config/parameters.yaml"/>
+        <node pkg="knowledge_server" name="detection" type="word2vec_detection_reduced.py" output="screen"/>
+        <node pkg="knowledge_server" name="tf_server" type="register_tf_server_reduced.py" output="screen"/>
+        <node pkg="knowledge_server" name="cam_tf" type="cam_points_transform.py" output="screen"/>
+        <node pkg="knowledge_server" name="map_server" type="word2vec_mapping.py" output="screen"/>
+        <node pkg="knowledge_server" name="navigator" type="word2vec_navigation.py" output="screen" args="$(arg init_wps)"/>
+    </group>
+
+      <!-- Stuff for the profiler -->
+    <include file="$(find rosprofiler)/launch/host_profiler.launch">
+        <arg name="sim_case" value="$(arg sim_case)"/>
+    </include>
+
+    <!-- 5. Shutdown file - listening to ensure shutdown happens -->
+    <node pkg="rosprofiler" name="shutdown" type="shutdown.py" output="screen" required="true"/>
+
+
+</launch>

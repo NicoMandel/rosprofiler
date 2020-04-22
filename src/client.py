@@ -66,14 +66,20 @@ class ProfileClient:
         ]
         host_df = pd.DataFrame(columns=self.extracted_statistics_host).set_index("Time")
 
-        # Assign a Dataframe to each host 
+        # Assign a Dataframe to each host and double check the nodelist
         self.host_df_dict = {}
         for host, nodes in self.host_dict.items():
             self.host_df_dict[host] = host_df.copy(deep=True)
+            ns = rosnode.get_nodes_by_machine(host)
             if not nodes:
-                ns = rosnode.get_nodes_by_machine(host)
                 self.host_dict[host] = ns
                 rospy.logwarn("No Nodes specified for host: {}. Getting all nodes: {}".format(host, ns))
+            else:
+                nodenames = [name for name in ns for item in nodes if item.lower() in name.lower()]
+                self.host_dict[host] = nodenames
+            rospy.loginfo("Recording values for host: {}, Nodes: {}".format(
+                host, self.host_dict[host]
+            ))
         
         # Setup work for the Nodes
         self.extracted_statistics_node = ["Time", "Duration", "Samples", "CPU Count",
@@ -85,9 +91,10 @@ class ProfileClient:
 
         node_df = pd.DataFrame(columns=self.extracted_statistics_node).set_index("Time")
         self.node_df_dict= {}
-        for key, values in self.host_dict.items():
-            for value in values:
-                idx = str(key+"_"+value)
+
+        for host, nodes in self.host_dict.items():
+            for node in nodes:
+                idx = str(host+"_"+node)
                 self.node_df_dict[idx] = node_df.copy(deep=True)
         
         
@@ -161,10 +168,10 @@ class ProfileClient:
         """ Callback on the node_statistics topic. Given Values are:
             Threads, Cpu load, virtual and real memory
         """
-        for key, values in self.host_dict.items():
-            if key in msg.uri.lower():          # this uri is either the IP or the ros_hostname
-                for value in values:
-                    if value in msg.node:    
+        for host, nodes in self.host_dict.items():
+            if host in msg.uri.lower():          # this uri is either the IP or the ros_hostname
+                for node in nodes:
+                    if node in msg.node:    
                         # 0. initialise an empty dataframe
                         temp_df = pd.DataFrame(columns=self.extracted_statistics_node).set_index("Time")
                         
@@ -195,7 +202,7 @@ class ProfileClient:
                         temp_df.at[t, "Swap Used max"] = (int(pd.np.floor(msg.swap_max))>> 20)
                         
                         # 2. Get the target dataframe which the values should be appended to out
-                        idx = str(key+"_"+value)
+                        idx = str(host+"_"+node)
                         target_df = self.node_df_dict[idx]
 
                         # 3. Concatenate the dfs
@@ -216,12 +223,14 @@ class ProfileClient:
             rospy.loginfo("Writing to file: {}".format(fname))
             for node_name, df in self.node_df_dict.items():
                 if df.shape[0] > 2:
+                    node_name = (node_name[:29]) if len(node_name) > 30 else node_name
                     df.to_excel(writer, sheet_name=node_name.replace('/',''))
 
         fname =  os.path.abspath(os.path.join(parentDir, '..','results',self.filename+'_hosts'+'.xlsx'))
         with pd.ExcelWriter(fname) as writer:
             rospy.loginfo("Writing to file: {}".format(fname))
             for host_name, df in self.host_df_dict.items():
+                host_name = (host_name[:29]) if len(host_name) > 30 else host_name
                 if df.shape[0] > 2:
                     df.to_excel(writer, sheet_name=host_name)
             
