@@ -107,6 +107,23 @@ Check with client.py whether the changes are the same noted down in there
 
 trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.py#L15@d05115ea722b46f9e84e259117c3ed09fc327460)
 
+### Nico Result Processing TODO:
+
+* [ ] Comparing the __same__ nodes (processes) on two different plattforms
+    * [ ] Values to compare, see NodeStatisticsNano msg
+        * [ ] absolute CPU hogging time
+        * [ ] PSS
+        * [ ] Virtual Memory
+        * [ ] Swap Memory
+* [ ] Comparing the __host__ values (see NanoStatistigs msg) when increasing the number of nodes run on it - __same__ test case
+    1. [ ] Best case - only necessary nodes: Image processing and waypoints
+    2. [ ] Worst case - full load
+    * [ ] Values to compare:
+        * [ ] Available Memory
+        * [ ] Maximum CPU load
+        * [ ] Power Draw
+* [ ] Comparing the influence of relative weighting put into the AHP
+
 ## Nico Potential Fixes
 
 * [x] check if the `_update_node_list`- function, [here](./src/rosprofiler/profiler_Nano.py#L148) does not work due to mavros length!

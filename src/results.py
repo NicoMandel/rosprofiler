@@ -5,7 +5,8 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import glob
+from pathlib import Path
+from itertools import combinations
 
 
 def getDataframe(filename):
@@ -124,6 +125,7 @@ def plot_node_df_dict(df_dict):
     """
      A function which takes a dictionary sorted by nodes and compiles it 
     """
+
     elems = int(len(df_dict)//2)+1
     # fig = plt.figure()
     fig, axes = plt.subplots(elems, elems, sharex=True)
@@ -137,29 +139,91 @@ def plot_node_df_dict(df_dict):
     print("Test Done")
 
 
-def compare_dicts(dict_1, dict_2):
+def compare_dicts(big_dict):
     """
-        Function to compare two dictionaries for the same information in them.
-        Mostly to be used with node dictionaries 
+        Function to compare a dictionary of  dictionaries for the same information in them.
+        Mostly to be used with node dictionaries.
+        For now only for **2** dictionary comparison
     """
-    for key_1, df_1 in dict_1.items():
-        for key_2, df_2 in dict_2.items():
-            nname_1 = key_1.split('_')[1:]
-            nname_2 = key_2.split('_')[1:]
+    
+    node_dictionaries = []
+    for pair in combinations(big_dict.items(), 2):
+        # pair is a key, value tuple
+        node_dictionaries.append(compare_two_dicts(pair[0], pair[1]))
+    
+    return node_dictionaries
+
+    # for key_1, df_1 in dict_1.items():
+    #     for key_2, df_2 in dict_2.items():
+    #         nname_1 = key_1.split('_')[1:]
+    #         nname_2 = key_2.split('_')[1:]
+
+def compare_two_dicts(dict_1, dict_2):
+    """
+     Granular function comparing the keys for two dictionaries to see if they match.
+     Gets called by `compare_dicts` function
+    """
+    # dict_1 and _2 being passed in are key, value tuples - have to be indexed
+    process_dict = {}
+    for hn_name in dict_1[1].keys():
+        nname = '_'.join(hn_name.split('_')[1:]).lower()
+        for key in dict_2[1].keys():
+            if nname in key.lower():
+                # reorder matching. Sort the dfs according to NODES
+                # Get the DFs
+                combined_dict = {}
+                df_1 = dict_1[1][hn_name]
+                df_2 = dict_2[1][key]
+                h_name1 = hn_name.split('_')[0].lower()
+                h_name2 = key.split('_')[0].lower()
+                combined_dict[h_name1] = df_1
+                combined_dict[h_name2] = df_2
+                # turn into the big dictionary entry
+                process_dict[nname] = combined_dict
+                print("Match found: {}".format(nname))
+                break
+        # [print("Match found: {}".format(nname)) for key in dict_2[1].keys() if nname in key.lower()]
+
+    # TODO: find a way to coordinate the rosprofiler nodes - where the _ does not matter
+
+    if len(process_dict) < 1:
+        process_dict = None
+    return process_dict
 
 
-def filepaths(directory_string, file_string):
+def filepaths(directory_string, file_string=None):
     """
         Searches from the base directory of the file for the directory with the directory string
         and in that directory searches for the file string.
         Returns:: [str] list of full filepaths.
     """
-    filepath = os.abspath(os.path.dirname(__file__))
-    for root, dirs, files in os.walk(filepath):
-        for f in files:
-            if f.endswith(".csv"):
-                file_id = f.split("_")[-1].split(".")[0]
-                dets = pd.read_csv(os.path.join(root,f),header=None)
+    file_dicts = {}
+    dirpath = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..')
+    for path in Path(dirpath).rglob('*'+directory_string+'*'):
+        if os.path.isdir(path):
+            for fname in Path(path).rglob('*'+file_string+'*'):
+                try:
+                    f = os.path.splitext(os.path.basename(fname))[0]
+                    file_dicts[f] = getDataframe(fname)
+                    print("Found Dataframes for file: {}".format(f))
+                except FileNotFoundError:
+                    print("Could not open file {}. Continuing".format(fname))
+    
+    # For error catching in outer function
+    if len(file_dicts) < 1:
+        file_dicts = None
+    return file_dicts
+    
+
+def plot_processes(lods):
+    """
+        plotting the same processes (Nodes) if and when they are running on different plattforms
+        Requires a list of dictionaries (lods) in the following format: 
+        Every item in the list is a dictionary, which holds node names. For each of these node names, there is a separate dictionary, with the key
+        being the identificator of the host and the value being the dataframe with the values
+    """
+    pass
+
     
 
 if __name__=="__main__":
@@ -192,9 +256,12 @@ if __name__=="__main__":
             break
             # print(df.iloc[0,0:3])
 
-    print(first_df.columns)
+    # print(first_df.columns)
+    filedicts = filepaths("results", filetype)
+    node_dicts = compare_dicts(filedicts)
+
     # df.columns = df.columns.str.replace(' ', '_')
     # plot_host_df(first_df)
-    compiled_df = summarize_node_df(df_dict)
-    plot_node_df_dict(compiled_df)
+    # compiled_df = summarize_node_df(df_dict)
+    # plot_node_df_dict(compiled_df)
     print("Done")
