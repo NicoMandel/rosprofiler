@@ -72,7 +72,7 @@ def plot_host_df(df):
 def summarize_node_df(df_dict):
     """
         receives a dictionary of node dataframes, which should be compared.
-        Returns a dictionary of dataframes compiled by similar measures 
+        Returns a dictionary of dataframes compiled by similar measures.
         Values in a node_df:
             "Time", "Duration", "Samples", "CPU Count",
             "Threads", "CPU Load mean", "CPU Load max", "CPU Load std",
@@ -121,12 +121,12 @@ def summarize_node_df(df_dict):
     compiled_df["Leftovers"] = leftover_df
     return compiled_df
     
-def plot_node_df_dict(df_dict):
+def plot_node_df_dict(df_dict, plot_name=""):
     """
      A function which takes a dictionary sorted by nodes and compiles it 
     """
 
-    elems = int(len(df_dict)//2)+1
+    elems = int(np.ceil(np.sqrt(len(df_dict))))
     # fig = plt.figure()
     fig, axes = plt.subplots(elems, elems, sharex=True)
     axes = axes.reshape(-1)
@@ -134,7 +134,7 @@ def plot_node_df_dict(df_dict):
         sns.lineplot(data=df, legend="full", dashes=False, ax=axes[i])
         axes[i].set(xlabel="Samples")
         axes[i].set_title(name)
-    
+    plt.suptitle(plot_name)
     plt.show()
     print("Test Done")
 
@@ -215,14 +215,67 @@ def filepaths(directory_string, file_string=None):
     return file_dicts
     
 
-def plot_processes(lods):
+def plot_processes(lods, filter_list=["Swap", "CPU L", "Virtual", "PSS", "Threads"]):
     """
         plotting the same processes (Nodes) if and when they are running on different plattforms
         Requires a list of dictionaries (lods) in the following format: 
         Every item in the list is a dictionary, which holds node names. For each of these node names, there is a separate dictionary, with the key
         being the identificator of the host and the value being the dataframe with the values
     """
-    pass
+    node_dict = {}
+    for big_dict in lods:
+        for nname, host_dict in big_dict.items():
+            # for each node combine the dfs
+            
+            # host_dict is itself a dictionary, where the keys are the hosts and the values are the dfs
+            node_dict[nname] = process_resources(host_dict, filter_list)
+            print("The above values are for node: {}".format(nname))
+            print("===============================")
+
+    for node, df_dict in node_dict.items():
+        plot_node_df_dict(df_dict, node)
+
+    print("Test")
+    # node_dict now holds dfs sorted by: dict[node] = dict[filters] = 
+            
+
+
+def process_resources(dictionary, filter_list, leftover="leftover"):
+    """
+        A function, which takes in a dictionary with a name and a long df,
+        and returns a dictionary of dfs
+        Params: Filter list, with default values: Swap, CPU L, Virtual and PSS  
+    """
+    df_dict = {}
+    for i in range(len(filter_list)+1):
+        if i == len(filter_list):
+            df_dict[leftover] = pd.DataFrame()
+        else:
+            df_dict[filter_list[i]] = pd.DataFrame()
+  
+    for name, df in dictionary.items():
+        # Drop all std deviation values
+        df.reset_index(drop=True, inplace=True)       # has to be done, because the time is not aligned across the hosts
+        df.drop(list(df.filter(regex=" std")), axis=1, inplace=True)
+        # used_cols = []
+        df.index = np.round(df.index.to_series().to_numpy(), decimals=1)
+        for fil in filter_list:
+            _tmp = df.filter(regex=fil)
+            df.drop(_tmp.columns.values.tolist(), axis=1, inplace=True)
+            # used_cols = used_cols + _tmp.columns.values.tolist()
+            new_colnames = [name+'_'+col for col in _tmp.columns.values.tolist()]
+            _tmp.columns = new_colnames
+            df_dict[fil] = pd.concat([df_dict[fil], _tmp], axis=1, sort=False)
+            # df.drop(_tmp.columns)
+        new_colnames = [name+'_'+col for col in df.columns.values.tolist()]
+        df.columns = new_colnames
+        df_dict[leftover] = pd.concat([df_dict[leftover], df], axis=1, sort=False)
+    
+    for key, value in df_dict.items():
+        print("Df for: {}".format(key))
+        print(value.head())
+
+    return df_dict
 
     
 
@@ -259,9 +312,12 @@ if __name__=="__main__":
     # print(first_df.columns)
     filedicts = filepaths("results", filetype)
     node_dicts = compare_dicts(filedicts)
-
     # df.columns = df.columns.str.replace(' ', '_')
     # plot_host_df(first_df)
     # compiled_df = summarize_node_df(df_dict)
     # plot_node_df_dict(compiled_df)
+
+    ###### New Shit below this line
+    plot_processes(node_dicts)
+
     print("Done")

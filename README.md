@@ -110,19 +110,23 @@ trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.p
 ### Nico Result Processing TODO:
 
 * [ ] Comparing the __same__ nodes (processes) on two different plattforms
-    * [ ] Values to compare, see NodeStatisticsNano msg
-        * [ ] absolute CPU hogging time
-        * [ ] PSS
-        * [ ] Virtual Memory
-        * [ ] Swap Memory
-* [ ] Comparing the __host__ values (see NanoStatistigs msg) when increasing the number of nodes run on it - __same__ test case
-    1. [ ] Best case - only necessary nodes: Image processing and waypoints
-    2. [ ] Worst case - full load
+    * [ ] Values to compare, see `NodeStatisticsNano msg`
+        * [ ] absolute CPU hogging time - what is the CPU load defined by psutil
+        * [x] PSS
+        * [x] Virtual Memory
+        * [x] Swap Memory
+* [ ] Comparing the __host__ values (see `NanoStatistigs msg`) when increasing the number of nodes run on it - __same__ test case
+    1. [ ] Worst case (Real-Time) - only necessary nodes: Image processing and waypoints
+    2. [ ] Best case (Online) - full load
     * [ ] Values to compare:
         * [ ] Available Memory
         * [ ] Maximum CPU load
         * [ ] Power Draw
 * [ ] Comparing the influence of relative weighting put into the AHP
+    * [ ] When considering that Navigation is a supporting function - How does this change our values?
+    * [ ] Under which Conditions are the following true:
+       * [ ] Our conditions are consistent (see AHP CR)
+       * [ ] The raspberry pi would be a better choice?
 
 ## Nico Potential Fixes
 
