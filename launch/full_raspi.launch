@@ -1,0 +1,126 @@
+<launch>
+    <!-- Arguments to change -->
+    <arg name="sim_case" default="1"/>
+    <rosparam command="load" file="$(find rosprofiler)/config/profileparams.yaml"/>
+
+    <!-- Arguments that are fixed -->
+    <arg name="machine" default="Nano"/>
+    <param name="enable_statistics" value="true"/>
+    <param name="filename" type="string" value="case_$(arg sim_case)"/>
+    <arg name="init_wps" default="$(find knowledge_server)/config/Initial_WPs.csv"/>  
+
+    <arg name="x" default="0"/>
+    <arg name="y" default="0"/>
+    <arg name="z" default="0.1"/>
+    <arg name="R" default="0"/>
+    <arg name="P" default="0"/>
+    <arg name="Y" default="0"/>
+    <arg name="gui" default="true"/>
+    <arg name="verbose" default="true"/>
+    <arg name="paused" default="false"/>
+    <arg name="use_sim_time" default="true"/>
+    <arg name="respawn_gazebo" default="false"/>
+    <arg name="world_name" default="$(find aruco_client)/worlds/word2vec_empty.world"/>
+    
+    <arg name="vehicle" default="iris"/>
+    <arg name="model_name" default="iris_bottom_cam_hitl"/> <!-- HITL_Compliant  -->
+    <arg name="sdf" default="$(find mavlink_sitl_gazebo)/models/$(arg model_name)/$(arg model_name).sdf"/>
+    <arg name="respawn_mavros" default="false"/>
+    <arg name="gcs_url" default=""/>
+    <arg name="tgt_system" default="1" />
+    <arg name="tgt_component" default="1" />
+    <arg name="log_output" default="screen" />
+    <arg name="fcu_protocol" default="v2.0" />
+    
+    <arg name="image_topic" value="/$(arg vehicle)/usb_cam/image_raw"/>
+    <arg name="camera_info_topic" value="/$(arg vehicle)/usb_cam/camera_info"/>
+
+    <!-- Machine Setup -->
+    <machine name="$(arg machine)" address="nano-wired" user="nico" env-loader="/home/nico/catkin_ws/devel/env_catkin.sh" timeout="10.0" default="false" />
+    <arg name="fcu_url" default="/dev/ttyTHS1:921600"/>
+
+
+    <!-- 1. Profiler Stuff -->
+    <!-- 1.1 Client Nodes  -->
+    <node machine="$(arg machine)" pkg="rosprofiler" type="rosprofilerNano" name="rosprofiler_$(arg machine)" output="screen"/>
+
+    <!-- 1.2 Host Nodes -->
+    <node pkg="rosprofiler" type="rosgrapher" name="rosgrapher" output="screen"/>
+    <node pkg="rosprofiler" type="rosprofilerNano" name="$(anon rosprofiler)" output="screen"/>
+ 
+    <!-- 2. Running Flight Stuff -->
+    <node machine="$(arg machine)" pkg="mavros" type="mavros_node" name="mavros" required="$(eval not respawn_mavros)" clear_params="true" output="$(arg log_output)" respawn="$(arg respawn_mavros)">
+        <param name="fcu_url" value="$(arg fcu_url)" />
+        <param name="gcs_url" value="$(arg gcs_url)" />
+        <param name="target_system_id" value="$(arg tgt_system)" />
+        <param name="target_component_id" value="$(arg tgt_component)" />
+        <param name="fcu_protocol" value="$(arg fcu_protocol)" />
+
+        <!-- load blacklist, config -->
+        <rosparam command="load" file="$(optenv CATKIN_BASE /home/nicolas/catkin_ws/src)/mavros/mavros/launch/px4_pluginlists.yaml" />
+        <rosparam command="load" file="$(optenv CATKIN_BASE /home/nicolas/catkin_ws/src)/mavros/mavros/launch/px4_config.yaml" />
+    </node>
+
+    <!-- 3. Gazebo -->
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="paused" value="$(arg paused)"/>
+        <arg name="world_name" value="$(arg world_name)"/>
+        <arg name="use_sim_time" value="$(arg use_sim_time)"/>
+        <arg name="gui" value="$(arg gui)"/>
+        <arg name="recording" value="false"/>
+        <arg name="debug" value="false"/>
+        <arg name="verbose" value="$(arg verbose)"/>
+        <arg name="respawn_gazebo" value="$(arg respawn_gazebo)"/>
+    </include>
+
+    <!-- 2. Iris model -->
+    <node name="$(anon vehicle_spawn)" pkg="gazebo_ros" type="spawn_model" output="screen" args="-sdf -file $(arg sdf) -model $(arg vehicle) -x $(arg x) -y $(arg y) -z $(arg z) -R $(arg R) -P $(arg P) -Y $(arg Y)"/>
+
+    <!-- 4. Detection Stuff -->
+    <node machine="$(arg machine)" pkg="ml_detector" type="ml_detector_node" name="ml_detector" clear_params="true" output="screen">
+        <!-- System Parameters -->
+        <param name="system/publish_overlay" value="true" type="boolean"/>
+        <param name="system/send_detailed_tag_info" value="true" type="boolean"/>
+        <param name="system/show_rejected" value="false" type="boolean"/>
+        <param name="system/refine_strategy" value="true" type="boolean"/>
+        <param name="system/camera_is_rectified" value="false" type="boolean"/>
+        <!-- Detection Parameters /-->
+        <rosparam command="load" file="$(optenv CATKIN_BASE /home/nicolas/catkin_ws/src)/marker_localization/ml_detector/launch/detect_config.yaml"/>
+        <rosparam command="load" file="$(optenv CATKIN_BASE /home/nicolas/catkin_ws/src)/marker_localization/ml_detector/launch/board_config.yaml"/>
+        <!-- Marker Parameters -->
+        <remap from="~detected_markers" to="/ml_landmarks/detected_markers"/>
+        <!-- Image Parameters -->
+        <remap from="~camera_info" to="$(arg camera_info_topic)"/>
+        <remap from="~image_raw" to="$(arg image_topic)"/>
+    </node>
+
+    <!-- 4.2 transform broadcaster -->
+    <node pkg="aruco_client" type="base_link_tf2_broadcaster" name="base_link_world"/>
+    <node pkg="tf2_ros" type="static_transform_publisher" name="camera_tf_broadcaster" args="0.0 0.0 -0.03 1.57 3.14 0.0 base_link robot_camera_link"/>
+
+    <!-- 4.3 the Node sending out the waypoints -->
+    <node machine="$(arg machine)" pkg="aruco_client" type="wp_node" name="wp_node" output="screen"/>
+
+    <!-- 4.4 The Gazebo spawn file -->
+    <node pkg="knowledge_server" name="$(anon marker_spawn)" type="gazebo_spawning.py" output="screen" args="$(arg sim_case)"/>
+
+    <!-- 4.6 the Knowledgebase shwizzle -->
+    <group ns="knowledgebase">
+        <rosparam command="load" file="$(find knowledge_server)/config/parameters.yaml"/>
+        <node pkg="knowledge_server" name="detection" type="word2vec_detection_reduced.py" output="screen"/>
+        <node pkg="knowledge_server" name="tf_server" type="register_tf_server_reduced.py" output="screen"/>
+        <node pkg="knowledge_server" name="cam_tf" type="cam_points_transform.py" output="screen"/>
+        <node pkg="knowledge_server" name="map_server" type="word2vec_mapping.py" output="screen"/>
+        <node pkg="knowledge_server" name="navigator" type="word2vec_navigation.py" output="screen" args="$(arg init_wps)"/>
+    </group>
+
+    <!-- 5. Shutdown file - listening to ensure shutdown happens -->
+    <!-- Profiling Logger -->
+    <node pkg="rosprofiler" name="profiling_client" type="client.py" output="screen"/>
+    <node pkg="rosprofiler" name="shutdown" type="shutdown.py" output="screen" required="true"/>
+    <node pkg="rosprofiler" name="timing_client" type="timing.py" output="screen"/>
+
+
+ 
+
+</launch>
