@@ -4,7 +4,7 @@
     <rosparam command="load" file="$(find rosprofiler)/config/profileparams.yaml"/>
 
     <!-- Arguments that are fixed -->
-    <arg name="machine" default="Nano"/>
+    <arg name="machine" default="raspi"/>
     <param name="enable_statistics" value="true"/>
     <param name="filename" type="string" value="case_$(arg sim_case)"/>
     <arg name="init_wps" default="$(find knowledge_server)/config/Initial_WPs.csv"/>  
@@ -36,8 +36,8 @@
     <arg name="camera_info_topic" value="/$(arg vehicle)/usb_cam/camera_info"/>
 
     <!-- Machine Setup -->
-    <machine name="$(arg machine)" address="nano-wired" user="nico" env-loader="/home/nico/catkin_ws/devel/env_catkin.sh" timeout="10.0" default="false" />
-    <arg name="fcu_url" default="/dev/ttyTHS1:921600"/>
+    <machine name="$(arg machine)" address="raspberry" user="nico" env-loader="/home/nico/catkin_ws/devel/env_new.sh" timeout="10.0" default="false" />
+    <arg name="fcu_url" default="/dev/ttyAMA0:921600"/>
 
 
     <!-- 1. Profiler Stuff -->
@@ -116,9 +116,9 @@
 
     <!-- 5. Shutdown file - listening to ensure shutdown happens -->
     <!-- Profiling Logger -->
-    <node pkg="rosprofiler" name="profiling_client" type="client.py" output="screen"/>
+    <!-- <node pkg="rosprofiler" name="profiling_client" type="client.py" output="screen"/> -->
     <node pkg="rosprofiler" name="shutdown" type="shutdown.py" output="screen" required="true"/>
-    <node pkg="rosprofiler" name="timing_client" type="timing.py" output="screen"/>
+    <!-- <node pkg="rosprofiler" name="timing_client" type="timing.py" output="screen"/> -->
 
 
  

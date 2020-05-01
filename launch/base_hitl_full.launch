@@ -68,8 +68,7 @@
     <node name="$(anon vehicle_spawn)" pkg="gazebo_ros" type="spawn_model" output="screen" args="-sdf -file $(arg sdf) -model $(arg vehicle) -x $(arg x) -y $(arg y) -z $(arg z) -R $(arg R) -P $(arg P) -Y $(arg Y)"/>
 
     <!-- 4. Load all the shwizzle for our system -->
-    <node machine="$(arg machine)" pkg="ml_detector" type="ml_detector_node" name="ml_detector" clear_params="true" output="screen">
-        <!-- System Parameters -->
+    <node machine="$(arg machine)" pkg="ml_detector" type="ml_detector_node" name="ml_detector" clear_params="true" output="screen">        <!-- System Parameters -->
         <param name="system/publish_overlay" value="true" type="boolean"/>
         <param name="system/send_detailed_tag_info" value="true" type="boolean"/>
         <param name="system/show_rejected" value="false" type="boolean"/>

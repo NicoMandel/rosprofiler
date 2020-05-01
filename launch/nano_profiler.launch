@@ -1,6 +1,7 @@
 <launch>
     <arg name="machine" default="Nano"/>
     <arg name="sim_case" default="1"/>
+    <arg name="logging" default="False"/>
     <!-- <machine name="$(arg machine)" address="nano-wired" user="nico" env-loader="/home/nico/catkin_ws/devel/env_new.sh" timeout="10.0" default="false" /> -->
 
     <!-- Loading monitoring parameters -->
@@ -15,8 +16,10 @@
     <!-- Host Nodes -->
     <node pkg="rosprofiler" type="rosgrapher" name="rosgrapher" output="screen"/>
     <node pkg="rosprofiler" type="rosprofilerNano" name="$(anon rosprofiler)" output="screen"/>
-    <node pkg="rosprofiler" name="profiling_client" type="client.py" output="screen"/>
-    <node pkg="rosprofiler" name="timing_client" type="timing.py" output="screen"/>
 
+    <group if="$(arg logging)">
+        <node pkg="rosprofiler" name="profiling_client" type="client.py" output="screen"/>
+        <node pkg="rosprofiler" name="timing_client" type="timing.py" output="screen"/>
+    </group>
 
 </launch>

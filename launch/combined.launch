@@ -1,19 +1,28 @@
 <launch>
-    <arg name="machine" default="Nano"/>
+    <arg name="machine" default="pi"/>
     <param name="/enable_statistics" value="true"/>
     <arg name="sim_case" default="1"/>
-    <machine name="$(arg machine)" address="nano-wired" user="nico" env-loader="/home/nico/catkin_ws/devel/env_new.sh" timeout="10.0" default="false" />
+    <machine name="$(arg machine)" address="nico-pi" user="nico" env-loader="/home/nico/catkin_ws/devel/env_new.sh" timeout="10.0" default="false" />
+    <!-- <arg name="fcu_url" default="/dev/ttyTHS1:921600"/>      Jetson nano FCU URL --> 
+    <arg name="fcu_url" default="/dev/ttyAMA0:921600"/>  <!--   Raspberry FCU URL -->
+    <arg name="logging" default="False"/>
+    <!-- Using the compressed image topic - to reduce bandwith -->
+    <arg name="compressed" default="False"/>
+    <param if="$(arg compressed)" name="/ml_detector/image_transport" value="compressed"/>
 
     <!-- Stuff for the profiler -->
     <include file="$(find rosprofiler)/launch/nano_profiler.launch">
+        <arg name="logging" value="$(arg logging)"/>
         <arg name="machine" value="$(arg machine)"/>
         <arg name="sim_case" value="$(arg sim_case)"/>
     </include>
 
     <!-- Stuff for the hitl -->
     <include file="$(find rosprofiler)/launch/base_hitl_full.launch">
+        <arg name="fcu_url" value="$(arg fcu_url)"/>
         <arg name="machine" value="$(arg machine)"/>
         <arg name="sim_case" value="$(arg sim_case)"/>
+        <!-- <arg name="compressed" value="$(arg compressed)"/> -->
     </include>
 
     <!-- 5. Shutdown file - listening to ensure shutdown happens -->
