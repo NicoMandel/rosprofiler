@@ -3,12 +3,13 @@ hosts:
     "192.168.1.149": False
     #     - "listen"
     #     - "profile"
-    "SEF-PA144858":
+    # "SEF-PA144858":
         # - "talk"
-        - "t"
+        # - "t"
 
 topics:
-    - "chatter"
+    - "knowledgebase/"
+    - "mavros/setpoint_position/local"
 
 # namespaces:
 #     - ""

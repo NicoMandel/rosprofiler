@@ -88,7 +88,6 @@ Check with client.py whether the changes are the same noted down in there
 - [x] Implement the option to change the frequency of monitoring.
     * [ ] [here](./scripts/rosprofilerNano#L52) using command line arguments 
     * [x] [here](./src/rosprofiler/profiler_Nano.py#L71) using ROS parameters
-    * [ ] for the [timing](./src/timing.py#L13) Script
 
 - [x] Implement the option to only monitor certain nodes:
     - [x] change [this](./src/rosprofiler/profiler_Nano.py#L94) to accept the rosparams set by the .config file in the `rosprofiler` package
@@ -142,6 +141,41 @@ trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.p
     * use a switch in the launch file and put this into a separate file
     * Cannot work - due to socket locking, the traffic could only be monitored through other processes. disregard (for now)
 2. Heat dissipation sensing, see [documentation](https://psutil.readthedocs.io/en/latest/#psutil.sensors_temperatures)
+
+## Modifications made by Nico to the hardware setup
+
+* Px4 Firmware:
+    * [ ] Version: 1.10.1
+    * [ ] Changed parameters 
+    * [ ] mavros_extras have to be compiled
+    * [ ] Hardware Power usage for consideration when selecting power distribution - see [this](https://diydrones.com/profiles/blogs/pixhawk-and-apm-power-consumption)
+* Raspberry
+    * [ ] cross-compiled OS ubuntu mate 18.04 - RAM issues
+    * [x] enabled zram - Ram/cores /2 - roughly 256 MB
+    * [x] added persistent 1 G swap - memory card longevity, swap paging
+    * [x] disabled hdmi - for power savings
+    * [x] disabled display service - for RAM savings
+    * [x] disabled bluetooth - Device Tree to use the UART. Not enabled CTS and RTS
+    * [x] custom opencv version - cross-compiled from source on B+ (overnight job)
+    * [ ] Serial clock speed elevated to work with mavros
+    * [ ] Only works on WiFi
+    * [ ] Tmux
+    * [ ] Mavros 0.33.4 - md5 checksum images - compilation times ~ 7 hrs (+9hrs for extras)
+    * [ ] SSH key access - roslaunch
+    * [ ] compiled image_transport_plugins - for compressed image transport due to WiFi only (Compilation time ~ 4 hrs)
+    * [ ] ntp time sync
+* Nano
+    * [ ] disabled display service - save ram
+    * [ ] enabled high power mode - power supply, also peripherals, see [these considerations](https://forums.developer.nvidia.com/t/power-supply-considerations-for-jetson-nano-developer-kit/71637)
+    * [ ] jetpack version does not support zram
+    * [ ] custom opencv version - compiled from source
+    * [ ] enabled swapfile - 2G - sd card longevity
+    * [ ] connected on ethernet - image transport
+    * [ ] tmux
+    * [ ] mavros 0.33.4 - md5 checksum issues
+    * [ ] SSH key access - roslaunch
+    * [ ] compiled image_transport_plugins - for compressed image transport
+    * [ ] ntp time sync
 
 # Stuff from the original documentation
 
