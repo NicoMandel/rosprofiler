@@ -137,7 +137,7 @@ trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.p
 ## NICO Nice-to-Haves
 
 1. udp port usage, to see how much mavlink actually uses, check [this documentation](https://psutil.readthedocs.io/en/latest/#psutil.net_connections)
-    * ` For example 9600 8 N 1 uses 10 bits per word (1 start bit, 8 data bits, and 1 stop bit). Each word would take 10/9600 = 1041.66666666 microsecs`  to monitor whether we get channel overload on the udp port
+    * `For example 9600 8 N 1 uses 10 bits per word (1 start bit, 8 data bits, and 1 stop bit). Each word would take 10/9600 = 1041.66666666 microsecs`  to monitor whether we get channel overload on the udp port
     * use a switch in the launch file and put this into a separate file
     * Cannot work - due to socket locking, the traffic could only be monitored through other processes. disregard (for now)
 2. Heat dissipation sensing, see [documentation](https://psutil.readthedocs.io/en/latest/#psutil.sensors_temperatures)
@@ -157,13 +157,15 @@ trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.p
     * [x] disabled display service - for RAM savings
     * [x] disabled bluetooth - Device Tree to use the UART. Not enabled CTS and RTS
     * [x] custom opencv version - cross-compiled from source on B+ (overnight job)
-    * [ ] Serial clock speed elevated to work with mavros
+    * [x] Serial clock speed elevated to work with mavros
     * [ ] Only works on WiFi
     * [ ] Tmux
     * [ ] Mavros 0.33.4 - md5 checksum images - compilation times ~ 7 hrs (+9hrs for extras)
-    * [ ] SSH key access - roslaunch
-    * [ ] compiled image_transport_plugins - for compressed image transport due to WiFi only (Compilation time ~ 4 hrs)
+    * [ ] SSH key access - roslaunch - hostname parsing
+    * [ ] compiled `image_transport_plugins` - for compressed image transport due to WiFi only (Compilation time ~ 4 hrs) - due to weird OpenCV dependencies
     * [ ] ntp time sync
+    * [ ] assigning process priority, see link from [qutas wiki](https://github.com/qutas/info/wiki/General-Computing#changing-software-priority), also possible in ROS with a [launch-prefix](https://answers.ros.org/question/246090/how-to-launch-nodes-with-realtime-priority/)
+    * [ ] Power issues, see this link from [qutas wiki](https://github.com/qutas/info/wiki/General-Computing#wifi-issues)
 * Nano
     * [ ] disabled display service - save ram
     * [ ] enabled high power mode - power supply, also peripherals, see [these considerations](https://forums.developer.nvidia.com/t/power-supply-considerations-for-jetson-nano-developer-kit/71637)
