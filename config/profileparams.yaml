@@ -4,7 +4,7 @@ hosts:
     # "192.168.1.120": False
     
     # Raspberry Pi
-    "pi": False
+    "nico-pi": False
 
     "SEF-PA144858": 
         - "knowledgebase"
