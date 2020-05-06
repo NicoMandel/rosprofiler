@@ -1,5 +1,5 @@
 <launch>
-    <arg name="machine" default="nico-pi"/>
+    <arg name="machine" default="pi"/>
     <param name="/enable_statistics" value="true"/>
     <arg name="sim_case" default="1"/>
     <machine name="$(arg machine)" address="nico-pi" user="nico" env-loader="/home/nico/catkin_ws/devel/env_new.sh" timeout="10.0" default="false" />
