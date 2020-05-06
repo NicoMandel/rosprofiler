@@ -4,9 +4,7 @@
     <!-- Setup Arguments for the machine -->
     <arg name="machine" default="Nano"/>
     <arg name="sim_case" default="1"/>
-
-    <!-- <machine name="$(arg machine)" address="nano-wired" user="nico" env-loader="/home/nico/catkin_ws/devel/env_catkin.sh" timeout="10.0" default="false" /> -->
-    <!-- <param name="enable_statistics" value="true"/> -->
+    <arg name="compressed" default="False"/>
 
     <arg name="x" default="0"/>
     <arg name="y" default="0"/>
@@ -82,6 +80,7 @@
         <!-- Image Parameters -->
         <remap from="~camera_info" to="$(arg camera_info_topic)"/>
         <remap from="~image_raw" to="$(arg image_topic)"/>
+        <param if ="$(arg compressed)" name="image_transport" value="compressed"/>
     </node>
 
     <!-- 4.2 transform broadcaster -->

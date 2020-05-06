@@ -4,8 +4,11 @@
     <arg name="sim_case" default="1"/>
     <machine name="$(arg machine)" address="nico-pi" user="nico" env-loader="/home/nico/catkin_ws/devel/env_new.sh" timeout="10.0" default="false" />
 
-    <arg name="fcu_url" default="/dev/ttyAMA0:921600"/>  <!--   Raspberry FCU URL -->
+    <arg name="fcu_url" default="/dev/ttyAMA0:921600"/>
+    <!--   Raspberry FCU URL -->
     <arg name="logging" default="False"/>
+    <arg name="compressed" default="False"/>
+    <arg name="visualize" default="False"/>
 
     <!-- Stuff for the profiler -->
     <include file="$(find rosprofiler)/launch/nano_profiler.launch">
@@ -19,10 +22,17 @@
         <arg name="fcu_url" value="$(arg fcu_url)"/>
         <arg name="machine" value="$(arg machine)"/>
         <arg name="sim_case" value="$(arg sim_case)"/>
+        <arg name="compressed" value="$(arg compressed)"/>
     </include>
 
     <!-- 5. Shutdown file - listening to ensure shutdown happens -->
     <node pkg="rosprofiler" name="shutdown" type="shutdown.py" output="screen" required="true"/>
 
-
+    <!-- 6. Displaying if imaging is supported -->
+    <group if="$(arg visualize)">
+        <node type="rviz" name="rviz" pkg="rviz" args="-d $(find aruco_client)/config/rviz_config.rviz" />
+        <node name="image_viewer" pkg="image_view" type="image_view" output="screen">
+            <remap from="image" to="/ml_detector/image_overlay"/>
+        </node>
+    </group>
 </launch>

@@ -5,11 +5,18 @@
     <arg name="compressed" default="False"/>
     <arg name="logging" default="False"/>
     <arg name="visualize" default="False"/>
+    <arg name="machine" default="pi"/>
+    <machine name="$(arg machine)" address="nico-pi" user="nico" env-loader="/home/nico/catkin_ws/devel/env_new.sh" timeout="10.0" default="false" />
+    <arg name="vehicle" default="iris"/>
+    <arg name="image_topic" value="/$(arg vehicle)/usb_cam/image_raw"/>
+    <arg name="camera_info_topic" value="/$(arg vehicle)/usb_cam/camera_info"/>
+
 
     <!-- Stuff for the sitl -->
     <include file="$(find aruco_client)/launch/word2vec_barebones.launch">
         <arg name="sim_case" value="$(arg sim_case)"/>
         <arg name="compressed" value="$(arg compressed)"/>
+        <arg name="vehicle" value="$(arg vehicle)"/>
     </include>
 
     <node pkg="aruco_client" type="wp_node" name="wp_node" output="screen"/>
@@ -23,18 +30,34 @@
         <node pkg="knowledge_server" name="navigator" type="word2vec_navigation.py" output="screen" args="$(arg init_wps)"/>
     </group>
 
-    <!-- 3. Marker Detection from Kye - includes all the default configs -->
-	 <include file="$(find ml_detector)/launch/marker_detect.launch">
-        <arg name="image_topic" value="/$(arg vehicle)/usb_cam/image_raw"/>
-        <arg name="camera_info_topic" value="/$(arg vehicle)/usb_cam/camera_info"/>
-        <arg name="compressed" value="$(arg compressed)"/>
-     </include>
+      
+    <node machine="$(arg machine)" pkg="ml_detector" type="ml_detector_node" name="ml_detector" clear_params="true" output="screen">
+		<!-- System Parameters -->
+		<param name="system/publish_overlay" value="true" type="boolean"/>
+		<param name="system/send_detailed_tag_info" value="true" type="boolean"/>
+		<param name="system/show_rejected" value="false" type="boolean"/>
+		<param name="system/refine_strategy" value="true" type="boolean"/>
+		<param name="system/camera_is_rectified" value="false" type="boolean"/>
+
+		<!-- Detection Parameters  -->
+		<rosparam command="load" file="$(find ml_detector)/launch/detect_config.yaml"/>
+		<rosparam command="load" file="$(find ml_detector)/launch/board_config.yaml"/>
+
+		<!-- Marker Parameters -->
+		<remap from="~detected_markers" to="/ml_landmarks/detected_markers"/>
+
+		<!-- Image Parameters -->
+		<remap from="~camera_info" to="$(arg camera_info_topic)"/>
+		<remap from="~image_raw" to="$(arg image_topic)"/>
+		<param if="$(arg compressed)" name="image_transport" value="compressed"/>
+	</node>
+
 
       <!-- Stuff for the profiler -->
-    <include file="$(find rosprofiler)/launch/host_profiler.launch">
+    <!-- <include file="$(find rosprofiler)/launch/host_profiler.launch">
         <arg name="sim_case" value="$(arg sim_case)"/>
         <arg name="logging" value="$(arg logging)"/>
-    </include>
+    </include> -->
 
     <!-- 5. Shutdown file - listening to ensure shutdown happens -->
     <node pkg="rosprofiler" name="shutdown" type="shutdown.py" output="screen" required="true"/>

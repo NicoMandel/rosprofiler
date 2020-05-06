@@ -166,6 +166,8 @@ trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.p
     * [ ] ntp time sync
     * [ ] assigning process priority, see link from [qutas wiki](https://github.com/qutas/info/wiki/General-Computing#changing-software-priority), also possible in ROS with a [launch-prefix](https://answers.ros.org/question/246090/how-to-launch-nodes-with-realtime-priority/)
     * [ ] Power issues, see this link from [qutas wiki](https://github.com/qutas/info/wiki/General-Computing#wifi-issues)
+    * [ ] Git commit hash/release of used packages
+    * [ ] IF there is no subscriber to a topic - there will be no message sent - TCP sockets. [If a tree falls in the forest, will it make a sound?](https://answers.ros.org/question/173813/why-publish-if-no-one-is-subscribing/) - extra topics should not elevate bandwidth
 * Nano
     * [ ] disabled display service - save ram
     * [ ] enabled high power mode - power supply, also peripherals, see [these considerations](https://forums.developer.nvidia.com/t/power-supply-considerations-for-jetson-nano-developer-kit/71637)
