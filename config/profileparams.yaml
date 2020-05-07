@@ -6,6 +6,8 @@ hosts:
     # Raspberry Pi
     "nico-pi": False
 
+    "nano" : False
+
     "SEF-PA144858": 
         - "knowledgebase"
         # - "mavros"

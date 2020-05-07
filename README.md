@@ -158,7 +158,7 @@ trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.p
     * [x] disabled bluetooth - Device Tree to use the UART. Not enabled CTS and RTS
     * [x] custom opencv version - cross-compiled from source on B+ (overnight job)
     * [x] Serial clock speed elevated to work with mavros
-    * [ ] Only works on WiFi
+    * [ ] Only works on WiFi - ROuter placed in direct LOS  @ less than 1m Distance - 5 Ghz prefered
     * [ ] Tmux
     * [ ] Mavros 0.33.4 - md5 checksum images - compilation times ~ 7 hrs (+9hrs for extras)
     * [ ] SSH key access - roslaunch - hostname parsing
@@ -168,6 +168,10 @@ trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.p
     * [ ] Power issues, see this link from [qutas wiki](https://github.com/qutas/info/wiki/General-Computing#wifi-issues)
     * [ ] Git commit hash/release of used packages
     * [ ] IF there is no subscriber to a topic - there will be no message sent - TCP sockets. [If a tree falls in the forest, will it make a sound?](https://answers.ros.org/question/173813/why-publish-if-no-one-is-subscribing/) - extra topics should not elevate bandwidth
+    * [ ] timesync rate dropped during WiFi connection - assumed because of mavros subscriber on host pc
+        * Test by:
+            * [ ] Running the node in question on the same pc
+            * [ ] Running the system on the nano with the wifi adapter
 * Nano
     * [ ] disabled display service - save ram
     * [ ] enabled high power mode - power supply, also peripherals, see [these considerations](https://forums.developer.nvidia.com/t/power-supply-considerations-for-jetson-nano-developer-kit/71637)
@@ -180,6 +184,12 @@ trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.p
     * [ ] SSH key access - roslaunch
     * [ ] compiled image_transport_plugins - for compressed image transport
     * [ ] ntp time sync
+    * [ ] WiFi only on 2.4 GhZ - limited compatible modules available for Nano
+
+### Conclude
+We will __NOT__ take this on the drone. Research on comparing the HITL on the platforms has shown that the system is susceptible to errors, which require a fundamental redesign of the system.
+We do not see this as a failure, but as a success for the evaluation step presented in this research, preventing premature deployment with potentially severe consequences. The stepwise migration and assessment of the system performance underlines the suggestions voiced by experienced researchers with quantitative data.
+WiFi influence is documented [in this paper](https://www.sciencedirect.com/science/article/pii/S0921889017309144)
 
 # Stuff from the original documentation
 

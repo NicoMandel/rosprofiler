@@ -27,13 +27,19 @@ class ProfileClient:
             # create a lookup between host name and ip
             self.host_dict = {}
             host_lookup = {}
+            dummy_ip = 12345
             for key in host_dict.keys():
                 try:
                     h_name = socket.gethostbyaddr(key)[0].split('.')[0].lower()
                     ip = key
                 except:
-                    ip = socket.gethostbyname(key)
-                    h_name = key.lower()    
+                    try:
+                        ip = socket.gethostbyname(key)
+                    except socket.gaierror:
+                        rospy.logwarn("Not applicable hostname specified: {}. Using dummy IP: {}".format(key, dummy_ip))
+                        ip = str(dummy_ip)
+                        dummy_ip +=1
+                    h_name = key.lower()
                 host_lookup[ip] = h_name
 
             # These are the names in the ROS environment
