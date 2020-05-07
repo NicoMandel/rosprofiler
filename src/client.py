@@ -59,7 +59,8 @@ class ProfileClient:
                                 break
                         break
         
-        rospy.wait_for_message("host_statistics", NanoStatistics)
+        rospy.wait_for_message("/host_statistics", NanoStatistics)
+        rospy.sleep(5)
 
         # Setup work for the hosts
         self.extracted_statistics_host = ["Time", "Duration", "Samples", "CPU Count", "Power",

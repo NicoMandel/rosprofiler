@@ -185,6 +185,8 @@ trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.p
     * [ ] compiled image_transport_plugins - for compressed image transport
     * [ ] ntp time sync
     * [ ] WiFi only on 2.4 GhZ - limited compatible modules available for Nano
+        * [ ] Start once to sync up mavlink parameters
+        * [ ] 
 
 ### Conclude
 We will __NOT__ take this on the drone. Research on comparing the HITL on the platforms has shown that the system is susceptible to errors, which require a fundamental redesign of the system.
