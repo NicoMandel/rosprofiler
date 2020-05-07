@@ -1,12 +1,14 @@
 <launch>
     <param name="/enable_statistics" value="true"/>
+    <arg name="address" default="nico-pi"/>
+    <arg name="user" default="nico"/>
     <arg name="sim_case" default="1"/>
     <arg name="init_wps" default="$(find knowledge_server)/config/Initial_WPs.csv"/>
     <arg name="compressed" default="False"/>
     <arg name="logging" default="False"/>
     <arg name="visualize" default="False"/>
     <arg name="machine" default="pi"/>
-    <machine name="$(arg machine)" address="nico-pi" user="nico" env-loader="/home/nico/catkin_ws/devel/env_new.sh" timeout="10.0" default="false" />
+    <machine name="$(arg machine)" address="$(arg address)" user="$(arg user)" env-loader="/home/nico/catkin_ws/devel/env_new.sh" timeout="10.0" default="false" />
     <arg name="vehicle" default="iris"/>
     <arg name="image_topic" value="/$(arg vehicle)/usb_cam/image_raw"/>
     <arg name="camera_info_topic" value="/$(arg vehicle)/usb_cam/camera_info"/>
@@ -30,7 +32,7 @@
         <node pkg="knowledge_server" name="navigator" type="word2vec_navigation.py" output="screen" args="$(arg init_wps)"/>
     </group>
 
-      
+    <!-- Start this by hand on the client machine -->
     <node machine="$(arg machine)" pkg="ml_detector" type="ml_detector_node" name="ml_detector" clear_params="true" output="screen">
 		<!-- System Parameters -->
 		<param name="system/publish_overlay" value="true" type="boolean"/>
@@ -53,11 +55,12 @@
 	</node>
 
 
-      <!-- Stuff for the profiler -->
-    <!-- <include file="$(find rosprofiler)/launch/host_profiler.launch">
+    <!-- Stuff for the profiler -->
+    <include file="$(find rosprofiler)/launch/nano_profiler.launch">
+        <arg name="machine" value="$(arg machine)"/>
         <arg name="sim_case" value="$(arg sim_case)"/>
         <arg name="logging" value="$(arg logging)"/>
-    </include> -->
+    </include>
 
     <!-- 5. Shutdown file - listening to ensure shutdown happens -->
     <node pkg="rosprofiler" name="shutdown" type="shutdown.py" output="screen" required="true"/>

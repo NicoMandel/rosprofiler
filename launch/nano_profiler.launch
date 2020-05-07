@@ -2,13 +2,14 @@
     <arg name="machine" default="Nano"/>
     <arg name="sim_case" default="1"/>
     <arg name="logging" default="False"/>
+    <arg name="filename" default="case_$(arg sim_case)"/>
     <!-- <machine name="$(arg machine)" address="nano-wired" user="nico" env-loader="/home/nico/catkin_ws/devel/env_new.sh" timeout="10.0" default="false" /> -->
 
     <!-- Loading monitoring parameters -->
     <rosparam command="load" file="$(find rosprofiler)/config/profileparams.yaml"/>
 
     <!-- Monitoring Namespace -->
-    <param name="filename" type="string" value="case_$(arg sim_case)"/>
+    <param name="filename" type="string" value="$(arg filename)"/>
 
     <!-- Client Nodes  -->
     <node machine="$(arg machine)" pkg="rosprofiler" type="rosprofilerNano" name="rosprofiler_$(arg machine)" output="screen"/>

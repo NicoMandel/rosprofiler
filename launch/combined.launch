@@ -1,20 +1,29 @@
 <launch>
     <arg name="machine" default="pi"/>
+    <arg name="address" default="nico-pi"/>
+    <arg name="user" default="nico"/>
     <param name="/enable_statistics" value="true"/>
     <arg name="sim_case" default="1"/>
-    <machine name="$(arg machine)" address="nico-pi" user="nico" env-loader="/home/nico/catkin_ws/devel/env_new.sh" timeout="10.0" default="false" />
+    <machine name="$(arg machine)" address="$(arg address)" user="$(arg user)" env-loader="/home/nico/catkin_ws/devel/env_new.sh" timeout="10.0" default="false" />
+    <arg name="filename" default="case_$(arg sim_case)"/>
 
-    <arg name="fcu_url" default="/dev/ttyAMA0:921600"/>
     <!--   Raspberry FCU URL -->
+    <!-- <arg name="fcu_url" default="/dev/ttyAMA0:921600"/> -->
+    <!--   Nano FCU URL -->
+    <arg name="fcu_url" default="/dev/ttyTHS1:921600"/>
+
     <arg name="logging" default="False"/>
     <arg name="compressed" default="False"/>
     <arg name="visualize" default="False"/>
+    <arg name="gui" default="true"/>
+
 
     <!-- Stuff for the profiler -->
     <include file="$(find rosprofiler)/launch/nano_profiler.launch">
         <arg name="logging" value="$(arg logging)"/>
         <arg name="machine" value="$(arg machine)"/>
         <arg name="sim_case" value="$(arg sim_case)"/>
+        <arg name="filename" value="$(arg filename)"/>
     </include>
 
     <!-- Stuff for the hitl -->
@@ -23,6 +32,7 @@
         <arg name="machine" value="$(arg machine)"/>
         <arg name="sim_case" value="$(arg sim_case)"/>
         <arg name="compressed" value="$(arg compressed)"/>
+        <arg name="gui" value="$(arg gui)"/>
     </include>
 
     <!-- 5. Shutdown file - listening to ensure shutdown happens -->
