@@ -25,11 +25,11 @@
     <!-- The Knowledgebase shwizzle -->
     <group ns="knowledgebase">
         <rosparam command="load" file="$(find knowledge_server)/config/parameters.yaml"/>
-        <node pkg="knowledge_server" name="detection" type="word2vec_detection_reduced.py" output="screen"/>
-        <node pkg="knowledge_server" name="tf_server" type="register_tf_server_reduced.py" output="screen"/>
-        <node pkg="knowledge_server" name="cam_tf" type="cam_points_transform.py" output="screen"/>
-        <node pkg="knowledge_server" name="map_server" type="word2vec_mapping.py" output="screen"/>
-        <node pkg="knowledge_server" name="navigator" type="word2vec_navigation.py" output="screen" args="$(arg init_wps)"/>
+        <node machine="$(arg machine)" pkg="knowledge_server" name="detection" type="word2vec_detection_reduced.py" output="screen"/>
+        <node machine="$(arg machine)" pkg="knowledge_server" name="tf_server" type="register_tf_server_reduced.py" output="screen"/>
+        <node machine="$(arg machine)" pkg="knowledge_server" name="cam_tf" type="cam_points_transform.py" output="screen"/>
+        <node machine="$(arg machine)" pkg="knowledge_server" name="map_server" type="word2vec_mapping.py" output="screen"/>
+        <node machine="$(arg machine)" pkg="knowledge_server" name="navigator" type="word2vec_navigation.py" output="screen" args="$(arg init_wps)"/>
     </group>
 
     <!-- Start this by hand on the client machine -->

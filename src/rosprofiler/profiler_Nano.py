@@ -102,7 +102,8 @@ class Profiler(object):
                     ))                
                     # Processes we are watching
                     if self.nodelist is False:
-                        rospy.logwarn("No nodes specified. Looking for All Nodes on {}".format(self._host))
+                        rospy.logwarn("No nodes specified. Waiting for two seconds for All Nodes on {}".format(self._host))
+                        rospy.sleep(2)
                         self.nodelist = rosnode.get_nodes_by_machine(self._host) #very expensive lookup 
                     rospy.loginfo("Logging Nodes: {}".format(self.nodelist))
 

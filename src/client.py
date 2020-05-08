@@ -214,6 +214,7 @@ class ProfileClient:
 
                         # 3. Concatenate the dfs
                         self.node_df_dict[idx] = self.concat_df(target_df, temp_df)
+                        break
 
 
     # Helper functions        
