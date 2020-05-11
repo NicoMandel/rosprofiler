@@ -7,7 +7,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 from itertools import combinations
-
+import socket
+from difflib import SequenceMatcher
+from copy import deepcopy
 
 def getDataframe(filename):
     """
@@ -139,7 +141,7 @@ def plot_node_df_dict(df_dict, plot_name=""):
     print("Test Done")
 
 
-def compare_dicts(big_dict):
+def compare_dicts(big_dict, matching="hosts"):
     """
         Function to compare a dictionary of  dictionaries for the same information in them.
         Mostly to be used with node dictionaries.
@@ -147,44 +149,81 @@ def compare_dicts(big_dict):
     """
     
     node_dictionaries = []
+    if matching is "hosts":
+        print("Matching by Hostnames")
+    elif matching is "filename":
+        print("Matching by filenames")
+    else:
+        print("No suitable matching specified. Matching By Hostnames")
+        matching="hosts"
+
     for pair in combinations(big_dict.items(), 2):
         # pair is a key, value tuple
-        node_dictionaries.append(compare_two_dicts(pair[0], pair[1]))
+        node_dictionaries.append(compare_two_dicts(pair[0], pair[1], matching=matching))
     
-    return node_dictionaries
+    # Consolidating the dictionary combination
+    consolid_dict = {}
+    consolid_dict = deepcopy(node_dictionaries[0])
+    for bdicts in node_dictionaries[1:]:
+        for node, small_dicts in bdicts.items():
+            # if the node is already in there
+            if node in consolid_dict.keys():
+                for key in small_dicts.keys():
+                    if key not in consolid_dict[node].keys():
+                        new_dict = consolid_dict[node]
+                        new_dict[key] = small_dicts[key]
+                        consolid_dict[node] = new_dict
+            else:
+                consolid_dict[node] = small_dicts
+    return consolid_dict
 
-    # for key_1, df_1 in dict_1.items():
-    #     for key_2, df_2 in dict_2.items():
-    #         nname_1 = key_1.split('_')[1:]
-    #         nname_2 = key_2.split('_')[1:]
 
-def compare_two_dicts(dict_1, dict_2):
+
+def compare_two_dicts(dict_1, dict_2, matching="hosts"):
     """
      Granular function comparing the keys for two dictionaries to see if they match.
-     Gets called by `compare_dicts` function
+     Is called by `compare_dicts` function
     """
     # dict_1 and _2 being passed in are key, value tuples - have to be indexed
     process_dict = {}
     for hn_name in dict_1[1].keys():
-        nname = '_'.join(hn_name.split('_')[1:]).lower()
+        namesplit = hn_name.split('_')
+        h_name1 = ip_lookup(namesplit[0].lower())
+        nname1 = '_'.join(namesplit[1:]).lower()
         for key in dict_2[1].keys():
-            if nname in key.lower():
+            namesplit2 = key.split('_')
+            h_name2 = ip_lookup(namesplit2[0].lower())
+            nname2 = '_'.join(namesplit2[1:]).lower()
+
+            # Double-sided matching process for nodes
+            if (nname1 in nname2) or (nname2 in nname1):
                 # reorder matching. Sort the dfs according to NODES
                 # Get the DFs
                 combined_dict = {}
                 df_1 = dict_1[1][hn_name]
                 df_2 = dict_2[1][key]
-                h_name1 = hn_name.split('_')[0].lower()
-                h_name2 = key.split('_')[0].lower()
-                combined_dict[h_name1] = df_1
-                combined_dict[h_name2] = df_2
+                if matching is "hosts":
+                    combined_dict[h_name1] = df_1
+                    combined_dict[h_name2] = df_2
+                elif matching is "filename":
+                    pre1 = dict_1[0].split('_')[:-1]
+                    pre1.append(h_name1)
+                    k1 = '_'.join(pre1)
+                    pre2 = dict_2[0].split('_')[:-1]
+                    pre2.append(h_name2)
+                    k2 = '_'.join(pre2)
+                    combined_dict[k1] = df_1
+                    combined_dict[k2] = df_2
+                else:
+                    combined_dict[h_name1] = df_1
+                    combined_dict[h_name2] = df_2
                 # turn into the big dictionary entry
+                nname = get_overlap(nname1, nname2)
+                print("Match found: {} and {}, Consolidated into: {}".format(nname1, nname2, nname))
                 process_dict[nname] = combined_dict
-                print("Match found: {}".format(nname))
                 break
         # [print("Match found: {}".format(nname)) for key in dict_2[1].keys() if nname in key.lower()]
 
-    # TODO: find a way to coordinate the rosprofiler nodes - where the _ does not matter
 
     if len(process_dict) < 1:
         process_dict = None
@@ -205,7 +244,7 @@ def filepaths(directory_string, file_string=None):
                 try:
                     f = os.path.splitext(os.path.basename(fname))[0]
                     file_dicts[f] = getDataframe(fname)
-                    print("Found Dataframes for file: {}".format(f))
+                    print("Found Dataframes for file: {} in folder {}".format(f, os.path.basename(os.path.dirname(fname))))
                 except FileNotFoundError:
                     print("Could not open file {}. Continuing".format(fname))
     
@@ -215,7 +254,7 @@ def filepaths(directory_string, file_string=None):
     return file_dicts
     
 
-def plot_processes(lods, filter_list=["Swap", "CPU L", "Virtual", "PSS", "Threads"]):
+def plot_processes(big_dict, filter_list=["Swap", "CPU L", "Virtual", "PSS", "Threads"]):
     """
         plotting the same processes (Nodes) if and when they are running on different plattforms
         Requires a list of dictionaries (lods) in the following format: 
@@ -223,13 +262,11 @@ def plot_processes(lods, filter_list=["Swap", "CPU L", "Virtual", "PSS", "Thread
         being the identificator of the host and the value being the dataframe with the values
     """
     node_dict = {}
-    for big_dict in lods:
-        for nname, host_dict in big_dict.items():
-            # for each node combine the dfs
+    for node, ch_dict in big_dict.items():
             
             # host_dict is itself a dictionary, where the keys are the hosts and the values are the dfs
-            node_dict[nname] = process_resources(host_dict, filter_list)
-            print("The above values are for node: {}".format(nname))
+            node_dict[node] = process_resources(ch_dict, filter_list)
+            print("The above values are for node: {}".format(node))
             print("===============================")
 
     for node, df_dict in node_dict.items():
@@ -278,6 +315,30 @@ def process_resources(dictionary, filter_list, leftover="leftover"):
     return df_dict
 
     
+def ip_lookup(ip):
+    """
+        Helper function. Looks up whether a hostname is an IP or a hostname and ALWAYS returns the hostname
+    """
+    if len(ip.split('.')) > 2:
+        ### BAD: hardcoded lookup here:
+        if ("1.120" in ip) or ("1.132" in ip):
+            return "nico-nano"
+        try:
+            hostname = socket.gethostbyaddr(ip)
+            return hostname
+        except:
+            return ip
+    else:
+        return ip
+
+def get_overlap(s1, s2):
+    """
+        Helper function to get the biggest overlapping substring between the strings, from [here](https://stackoverflow.com/questions/14128763/how-to-find-the-overlap-between-2-sequences-and-return-it)
+        Used to find the node name overlap
+    """
+    s = SequenceMatcher(None, s1, s2)
+    pos_a, pos_b, size = s.find_longest_match(0, len(s1), 0, len(s2))
+    return s1[pos_a:pos_a+size]
 
 if __name__=="__main__":
 
@@ -310,8 +371,8 @@ if __name__=="__main__":
             # print(df.iloc[0,0:3])
 
     # print(first_df.columns)
-    filedicts = filepaths("results", filetype)
-    node_dicts = compare_dicts(filedicts)
+    filedicts = filepaths("results_nano", filetype)
+    node_dicts = compare_dicts(filedicts, matching="filename")
     # df.columns = df.columns.str.replace(' ', '_')
     # plot_host_df(first_df)
     # compiled_df = summarize_node_df(df_dict)
