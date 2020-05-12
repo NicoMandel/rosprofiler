@@ -10,6 +10,7 @@ from itertools import combinations
 import socket
 from difflib import SequenceMatcher
 from copy import deepcopy
+import re
 
 def getDataframe(filename):
     """
@@ -136,6 +137,7 @@ def plot_node_df_dict(df_dict, plot_name=""):
         sns.lineplot(data=df, legend="full", dashes=False, ax=axes[i])
         axes[i].set(xlabel="Samples")
         axes[i].set_title(name)
+        axes[i].set_ylim(0,)
     plt.suptitle(plot_name)
     plt.show()
     print("Test Done")
@@ -229,6 +231,22 @@ def compare_two_dicts(dict_1, dict_2, matching="hosts"):
         process_dict = None
     return process_dict
 
+def compare_host_dicts(host_dict):
+    """
+        Function to compare two host dictionaries
+    """
+    big_dict = {}
+    for c_name, h_dict in host_dict.items():
+        cnamesplit = c_name.split('_')
+        cname = '_'.join(cnamesplit[:-1])
+        for hname, df in h_dict.items():
+            hname = ip_lookup(hname)
+            new_name = '_'.join([cname, hname])
+            big_dict[new_name] = df
+
+
+    return big_dict
+
 
 def filepaths(directory_string, file_string=None):
     """
@@ -314,6 +332,53 @@ def process_resources(dictionary, filter_list, leftover="leftover"):
 
     return df_dict
 
+def compare_vals(bdict, filter_list=["^(CPU L).*(max)$", "^(Used M).*(max)$", "^(Avail).*(Mem).*(min)$", "^(Swap U).*(max)$"]):
+    """ 
+    Function to take in the big dictionary and compare values of interest.
+    At Host level
+    Values to compare
+        * CPU Load Max
+        * Phymem used Max
+        * Phymem avail Min
+
+    Hard Checks:
+        * Swap Used max > 0?
+    """
+    # Prefilter the list 
+    # Get the first df
+    df = list(bdict.values())[0]
+    collist = df.columns.values.tolist()
+    
+    fillist = filtercolumns(collist, filter_list)
+    outdfdict = {}
+    for fil in fillist:
+        outdfdict[fil] = pd.DataFrame()
+    
+    # With the list of headers, filter the dfs
+    for name, df in bdict.items():
+        ndf = df.reset_index(drop=True)
+        # ndf.index = np.round(df.index.to_series().to_numpy(), decimals=1)
+        ndf = ndf.filter(items=fillist)
+        
+        for col in ndf.columns.values.tolist():
+            fdf = ndf.filter(like=col, axis=1)
+            fdf.columns = [name]
+            outdfdict[col] = pd.concat([outdfdict[col], fdf], axis=1, sort=False)
+            
+    print("test Done")
+    return outdfdict
+
+
+def filtercolumns(collist, filters=["^(CPU L).*(max)$", "^(Used M).*(max)$", "^(Avail).*(Mem).*(min)$", "^(Swap U).*(max)$"]):
+    """
+        Test function to find out the filters for the columns
+    """
+
+    outputl = []
+    for fil in filters:
+        r = re.compile(str(fil))
+        outputl+=list(filter(r.search, collist))
+    return outputl
     
 def ip_lookup(ip):
     """
@@ -346,39 +411,49 @@ if __name__=="__main__":
 
     # 1. get the File which results we are interested in
     counter = 1
-    filetype = 'nodes'
+    filetype = 'node'
     result_host = '_pc'
     # result_host = '_nano'
     parentDir = os.path.dirname(__file__)
     fname = os.path.abspath(os.path.join(parentDir, '..','results'+result_host,'case_'+str(counter)+result_host+'_'+filetype+'.xlsx'))
 
     # 2. Get the dataframe from the filename
-    try:
-        df_dict = getDataframe(fname)
-    except FileNotFoundError as e:
-        print("Filename : {} Invalid, you muppet. Come on, try again.".format(fname))
+    # try:
+    #     df_dict = getDataframe(fname)
+    # except FileNotFoundError as e:
+    #     print("Filename : {} Invalid, you muppet. Come on, try again.".format(fname))
     
-    if len(df_dict) < 2:
-        first = next(iter(df_dict))
-        first_df = df_dict[first]
-    else:
-        # What to do with the dataframes
-        for key, df in df_dict.items():
-            print("\n\nKey: {}, Df: ".format(key))
-            print(df.head())
-            first_df = df.copy(deep=True)
-            break
-            # print(df.iloc[0,0:3])
+    # if len(df_dict) < 2:
+    #     first = next(iter(df_dict))
+    #     first_df = df_dict[first]
+    # else:
+    #     # What to do with the dataframes
+    #     for key, df in df_dict.items():
+    #         print("\n\nKey: {}, Df: ".format(key))
+    #         print(df.head())
+    #         first_df = df.copy(deep=True)
+    #         break
+    #         # print(df.iloc[0,0:3])
 
     # print(first_df.columns)
+    filetype = 'host'
     filedicts = filepaths("results_nano", filetype)
-    node_dicts = compare_dicts(filedicts, matching="filename")
+    pc_dicts = filepaths("results_pc", filetype)
+    filedicts["sitl_1_hosts"] = list(pc_dicts.values())[0] # renaming the pc_dicts dictionary
+    # node_dicts = compare_dicts(filedicts, matching="filename")
+    host_dicts = compare_host_dicts(filedicts)
+    print("Something Something")
     # df.columns = df.columns.str.replace(' ', '_')
     # plot_host_df(first_df)
     # compiled_df = summarize_node_df(df_dict)
     # plot_node_df_dict(compiled_df)
 
     ###### New Shit below this line
-    plot_processes(node_dicts)
+    # Plotting the values from entire processes
+    # plot_processes(node_dicts)
+
+    # Compare only the values of interest in this case - for HOSTS
+    resorted_dict = compare_vals(host_dicts)
+    plot_node_df_dict(resorted_dict)
 
     print("Done")
