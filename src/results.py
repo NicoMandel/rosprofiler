@@ -439,7 +439,13 @@ if __name__=="__main__":
     filetype = 'host'
     filedicts = filepaths("results_nano", filetype)
     pc_dicts = filepaths("results_pc", filetype)
+    rasp_dicts = filepaths("results_pi", filetype)
+
+    # Adding other dictionaries by hand
     filedicts["sitl_1_hosts"] = list(pc_dicts.values())[0] # renaming the pc_dicts dictionary
+    filedicts["picompr_1_hosts"] = rasp_dicts["compr_1_hosts"]
+    filedicts["piuncompr_1_hosts"] = rasp_dicts["uncompr_1_hosts"]
+
     # node_dicts = compare_dicts(filedicts, matching="filename")
     host_dicts = compare_host_dicts(filedicts)
     print("Something Something")
