@@ -6,6 +6,65 @@
 import numpy as np
 
 
+class ahp_mat:
+
+    RANDOMCONSISTENCY =  [0.00, 0.00, 0.52, 0.89, 1.11, 1.25, 1.35, 1.40, 1.45, 1.49]
+    CONSISTENT = 0.10
+
+    def __init__(self, arr):
+        """
+            A class to calculate an ahp matrix.
+            Params: a (right-triangular) matrix filled in with the appropriate values
+        """
+        self.arr = arr
+        self.geteig()
+        self.getci()
+
+    def getRelWeights(self):
+        """
+            method to return the relative weights 
+        """
+        pass
+
+    def geteig(self):
+        """
+            Method to set the eigenvectors/values neccessary
+        """
+        val, vec = np.linalg.eig(np.array(self.arr))
+        # vec = vec/np.sum(vec) # Normalising the Eigenvector
+        self.eigVal = val[np.argmax(val)].real
+        eigVec = vec[:,np.argmax(val)].real
+        self.eigVec = eigVec / np.sum(eigVec)
+        
+
+    def getci(self):
+        """
+            Method to calculate the consistency index using the max eigenvalue 
+        """
+        self.ci = (self.eigVal - self.arr.shape[0]) / (self.arr.shape[0] - 1)
+        self.consratio = self.ci / self.RANDOMCONSISTENCY[self.arr.shape[0]]
+
+    def getconsistency(self):
+        """
+            A method to calculate the consistency index.
+            Boolean. Returns true if the array is deemed consistent. False if not 
+        """
+        if self.consratio < self.CONSISTENT:
+            return True
+        else:
+            return False
+
+    @classmethod
+    def setconsistent(cls, val):
+        """
+            A setter method for the setting the consistency value across ALL members
+        """
+        if type(val) is not float:
+            raise ValueError("Not the correct type. Needs to be float")
+        else:
+            cls.CONSISTENT = val
+            return True
+
 
 class analyic_hierarchy():
     """ Class to calculate the hierarchy of a Matrix of Ratios. Please Read Documentation for Details:
