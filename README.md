@@ -117,10 +117,11 @@ trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.p
 * [ ] Comparing the __host__ values (see `NanoStatistigs msg`) when increasing the number of nodes run on it - __same__ test case
     1. [ ] Worst case (Real-Time) - only necessary nodes: Image processing and waypoints
     2. [ ] Best case (Online) - full load
-    * [ ] Values to compare:
-        * [ ] Available Memory
-        * [ ] Maximum CPU load
-        * [ ] Power Draw
+    * [x] Values to compare:
+        * [x] Available Memory
+        * [x] Maximum CPU load
+        * [x] Power Draw - calculated either through CPU*nominal load or through monitoring values
+        * [x] Faults
 * [ ] Comparing the influence of relative weighting put into the AHP
     * [ ] When considering that Navigation is a supporting function - How does this change our values?
     * [ ] Under which Conditions are the following true:
@@ -186,7 +187,13 @@ trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.p
     * [ ] ntp time sync
     * [ ] WiFi only on 2.4 GhZ - limited compatible modules available for Nano
         * [ ] Start once to sync up mavlink parameters
-        * [ ] 
+
+* Setting niceness values below 0 requires super user privileges 
+
+## Result Processing
+
+### 1 - running initial tests on Nano and Raspberry
+Raspberry exhibits dropouts (0-performance indicators) under minimal load. To elimiate this being due to data transfer of raw images, we use compressed images and modify the transport mode for wifi. The issue persists, so we do the same test with the nano. This does not exhibit changes, so we test the full load with compressed images on the Nano.
 
 ### Conclude
 We will __NOT__ take this on the drone. Research on comparing the HITL on the platforms has shown that the system is susceptible to errors, which require a fundamental redesign of the system.

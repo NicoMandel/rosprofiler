@@ -5,6 +5,8 @@
 
 import numpy as np
 
+
+
 class analyic_hierarchy():
     """ Class to calculate the hierarchy of a Matrix of Ratios. Please Read Documentation for Details:
     Original Article: https://www.sciencedirect.com/science/article/pii/0270025587904738 by T. Saaty (1989)
@@ -15,15 +17,19 @@ class analyic_hierarchy():
 
     Please be aware that this uses an approximation to calculate the Eigenvector, but provides other methods for more accurate definitions if necessary
     """
+
     # Random Consistency - acquired empirically - see usage above. CR should be >0.1
     RANDOMCONSISTENCY =  [0.00, 0.00, 0.52, 0.89, 1.11, 1.25, 1.35, 1.40, 1.45, 1.49]
     CONSISTENT = 0.10
+
+
 
     # Constructor
     def __init__(self, array):
         """ Constructor. Requires a Matrix.
         Returns nothing
         The normalised EigenVector values can be accessed via attribute eigVec"""
+
         self.array = array
         self.width = array.shape[0]
         self.length = array.shape[1]
@@ -60,6 +66,7 @@ class analyic_hierarchy():
         """Calculates the Ratio of Consistency.
         Args: the CI calculated from the Eigenvector, and the empirical consistency.
         Returns: an index"""
+
         return (self.CI)/(self.RANDOMCONSISTENCY[self.width-1])
     
     # Approximation of the Eigenvector
@@ -103,6 +110,7 @@ class analyic_hierarchy():
         """Correct calculation of the principal Eigenvector using the numpy library.
         Args: A matrix
         Returns: The principal eigenvector, as well as the eigenvalues"""
+
         val, vec = np.linalg.eig(np.array(self.array))
         vec = vec/np.sum(vec)
         maxvalidx = np.argmax(val)

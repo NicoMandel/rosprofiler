@@ -11,6 +11,7 @@ import socket
 from difflib import SequenceMatcher
 from copy import deepcopy
 import re
+from scipy import stats
 
 def getDataframe(filename):
     """
@@ -332,7 +333,7 @@ def process_resources(dictionary, filter_list, leftover="leftover"):
 
     return df_dict
 
-def compare_vals(bdict, filter_list=["^(CPU L).*(max)$", "^(Used M).*(max)$", "^(Avail).*(Mem).*(min)$", "^(Swap U).*(max)$"]):
+def compare_vals(bdict, filter_list=["^(CPU L).*(max)$", "^(Used).*(Mem).*(max)$", "^(Avail).*(Mem).*(min)$", "^(Swap).*(U).*(max)$"]):
     """ 
     Function to take in the big dictionary and compare values of interest.
     At Host level
@@ -368,6 +369,87 @@ def compare_vals(bdict, filter_list=["^(CPU L).*(max)$", "^(Used M).*(max)$", "^
     print("test Done")
     return outdfdict
 
+def consolid_values(bdict, skipna=True, alpha=1e-3, perc=0.9):
+    """
+        A function to turn the big dictionary into a dataframe by using consolidated values
+    """
+    cpu_df = bdict['CPU Load max']
+    normality = normtest(cpu_df.values)
+    print("Normality test failed: {} of {}. Using Median".format(normality[np.where(normality<alpha)].shape[0],normality.shape[0]))
+    print("Normality test Done. Proceeding with array building")
+    print("Looking for max values")
+    bdf = pd.DataFrame(data=None, index=list(bdict.keys()), columns=list(bdict.values())[0].columns.tolist())
+    for key, df in bdict.items():
+        # bdf.at[key] = df.max(skipna=skipna)
+        
+        vals = np.nanquantile(df.values, perc, axis=0)
+        bdf.at[key] = vals
+
+    print(bdf.head())
+    print("Big Df done")
+    return bdf
+
+def getfaults(bdict, target_list):
+    """
+        Function to count the faults of a system.
+        Calculated over the CPU load mean
+        appends it to the target-df
+    """
+    ser = pd.Series(index=target_list, name="Faults")
+    for name in target_list:
+        df = bdict[name]
+        ndf = df.reset_index(drop=True, inplace=False)
+        ndf = ndf.filter(regex="^(CPU L).*(mean)$")
+        ct = np.count_nonzero(ndf.values < 0.1)
+        ser.at[name] = ct
+    return ser
+        
+
+def getpower(bdict, target_list, pinom=4.1):
+    """
+        Function to calculate the median power usage.
+        Appends it to the target df
+        receives a list
+        returns a Series
+    """
+    ser = pd.Series(index=target_list, name="Power")
+    for name in target_list:
+        df = bdict[name]
+        ndf = df.reset_index(drop=True, inplace=False)
+        ndf = ndf.filter(like="Power")
+        if np.sum(ndf.values) < 0: # Since the values if the file is not found is negative, we use the CPU_Load_max
+            alt = df.filter(regex="^(CPU L).*(max)")
+            if "pi" in name:
+                # vol = pivol
+                # amp = piamp
+                # watt = vol*amp
+                # power = np.mean((10*watt*alt.values))
+                # This gives waaay to high values, use nominal wattage instead: 4.1
+                avg = np.mean(alt.values)
+                power = avg * pinom * 10
+            else:
+                print("Error. Do not know this kind of device")
+                power=-1.0
+        else:
+            power = np.mean(ndf.values)
+        ser.at[name] = power
+    return ser
+
+
+def normtest(arr, alpha=5e-2, axis=0, nan_policy='omit'):
+    """
+        A function to test for normality - to use with the CPU Load. Returns true if the 0-Hypothesis can be rejected
+        (Commonly: 0-Hypothesis: it comes from a normal distribution)
+    """
+    _, p = stats.normaltest(arr, axis=0, nan_policy=nan_policy)
+    if p.shape[0] > 1:
+        return p
+    else:
+        if p < alpha:
+            return False
+        else:
+            return True
+        
 
 def filtercolumns(collist, filters=["^(CPU L).*(max)$", "^(Used M).*(max)$", "^(Avail).*(Mem).*(min)$", "^(Swap U).*(max)$"]):
     """
@@ -460,6 +542,37 @@ if __name__=="__main__":
 
     # Compare only the values of interest in this case - for HOSTS
     resorted_dict = compare_vals(host_dicts)
+
+    # On the resorted dict, turn it into a df and work from there
+    # ser = resorted_dict['CPU Load max']["piuncompr_1_nico-pi"]
+    # print(ser.head())
+    # np.nanpercentile(ser.values, 0.9, axis=0)
+    # print("")
+    # fig, ax = plt.subplots()
+    # ax.plot(ser)
+    # plt.plot()
+    print("do_stuff_here")                                                        
+    cdf = consolid_values(resorted_dict, perc=0.75)
+    reddf = cdf.filter(like="nico", axis=1)
+    print(reddf.head())
+
+    # TODO: get additional values out:
+    # Dictionary subset:
+    # subdict = {k: host_dicts.get(k) for k in reddf.columns.values.tolist()}
+    # Faults - 0 drops 
+    ser = getfaults(host_dicts, reddf.columns.values.tolist())
+    reddf = pd.concat([reddf.transpose(), ser], axis=1).transpose()
+    print(reddf.head())
+    # Power
+    ser = getpower(host_dicts, reddf.columns.values.tolist())
+    reddf = pd.concat([reddf.transpose(), ser], axis=1).transpose()
+    print(reddf.head(n=6))
+
+    # fig, ax = plt.subplots()
+    # linesofinterest = resorted_dict["CPU Load max"]["piuncompr_1_nico-pi"]
+    # ax.plot(linesofinterest)
+    # ax.set_ylim(0,)
+    # plt.show()
     plot_node_df_dict(resorted_dict)
 
     print("Done")
