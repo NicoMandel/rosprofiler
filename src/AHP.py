@@ -24,7 +24,7 @@ class ahp_mat:
         """
             method to return the relative weights 
         """
-        pass
+        return self.eigVec
 
     def geteig(self):
         """
@@ -59,11 +59,40 @@ class ahp_mat:
         """
             A setter method for the setting the consistency value across ALL members
         """
-        if type(val) is not float:
-            raise ValueError("Not the correct type. Needs to be float")
+        if not (val < 1.0) and not (val > 0.0):
+            raise ValueError("Not  correct type. Needs to be float between 0 and 1, is {}".format(
+                    val
+                    ))
         else:
             cls.CONSISTENT = val
             return True
+
+    @classmethod
+    def getrandarray(cls, n=3):
+        """
+            Static method.
+            Returns a random array of size n conforming to the standards of the AHP 
+        """
+
+        vals = np.arange(start=1, stop=10)
+        invvals = 1/vals
+        poss = np.concatenate((vals, invvals), axis=0)
+        arr = np.ones((n,n), dtype=np.float64)
+        ind = np.triu_indices_from(arr,1)
+        arr[ind] = np.random.choice(poss,size=ind[0].size)
+        arr = cls.filtril(arr)
+        return arr
+
+
+    @staticmethod
+    def filtril(arr):
+        """
+            Static method.
+            Returns the lower triangular matrix of the array filled in conforming to the standards of the AHP
+        """
+        arr[np.tril_indices_from(arr,-1)] = 1/arr[np.triu_indices_from(arr,1)]
+        return arr
+
 
 
 class analyic_hierarchy():
