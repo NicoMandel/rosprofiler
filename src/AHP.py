@@ -10,6 +10,7 @@ class ahp_mat:
 
     RANDOMCONSISTENCY =  [0.00, 0.00, 0.52, 0.89, 1.11, 1.25, 1.35, 1.40, 1.45, 1.49]
     CONSISTENT = 0.10
+    poss = None
 
     def __init__(self, arr):
         """
@@ -68,18 +69,29 @@ class ahp_mat:
             return True
 
     @classmethod
+    def initrand(cls):
+        """
+            Function to initialize the random variables for the randarray to pick from
+        """
+        if cls.poss is not None:
+            print("Already Initialized.")
+        else:
+            vals = np.arange(start=1, stop=10)
+            invvals = 1/vals
+            cls.poss = np.concatenate((vals, invvals), axis=0)
+
+    @classmethod
     def getrandarray(cls, n=3):
         """
             Static method.
             Returns a random array of size n conforming to the standards of the AHP 
         """
-
-        vals = np.arange(start=1, stop=10)
-        invvals = 1/vals
-        poss = np.concatenate((vals, invvals), axis=0)
+        
+        if cls.poss is None:
+            cls.initrand()
         arr = np.ones((n,n), dtype=np.float64)
         ind = np.triu_indices_from(arr,1)
-        arr[ind] = np.random.choice(poss,size=ind[0].size)
+        arr[ind] = np.random.choice(cls.poss,size=ind[0].size)
         arr = cls.filtril(arr)
         return arr
 
