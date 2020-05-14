@@ -195,6 +195,71 @@ trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.p
 ### 1 - running initial tests on Nano and Raspberry
 Raspberry exhibits dropouts (0-performance indicators) under minimal load. To elimiate this being due to data transfer of raw images, we use compressed images and modify the transport mode for wifi. The issue persists, so we do the same test with the nano. This does not exhibit changes, so we test the full load with compressed images on the Nano.
 
+### 2 - AHP
+* [ ] CPU used
+    * [ ] Not normally distributed - using the 90th percentile of maximum CPU load - robust and in line with hard performance models
+    * [ ] Criteria
+        * [ ] Higher is better
+        * [ ] Piecewise subtraction
+           * [ ] if  < 1: 1/, if > 1 -> difference scaled 
+
+* [ ] Memory used
+    * [ ] Used Memory Max. virt mem used - not the best indicator, but sufficient - contains underlying process
+    * [x] Nominal values:
+        * [x] Raspberry Pi - `512` MB
+        * [x] Nano - `4096` MB
+    * [ ] Criteria
+        * [ ] % of memory used - relative value
+        * [ ] Higher is better
+
+* [ ] CPU free
+    * [ ] 1 - CPU-used. as a safety for system resources and cycling things
+    * [ ] Criteria
+        * [ ] % of usage - relative value
+        * [ ] Higher is better
+
+* [ ] Memory free
+    * [ ] Avail memory Min - virt mem avail - instantly given without going into swap - very accurate
+    * [ ] Criteria
+        * [ ] absolute value
+        * [ ] Higher is better
+
+* [ ] Faults
+    * [x] Amount of times the mean CPU load fell under 0.1 - indicator of system dropout from preliminary experiments
+    * [ ] Criteria
+        * [ ] absolute value
+        * [ ] > 1 very bad. If both are > 1, the ratio can be used, but both are bad. 
+
+* [ ] Size
+    * [x] volume of the outermost square, including case, calculated by `width*height*depth` (when looking from the front) in cm
+        * [x] Nano: `12 x 6.2 x 9`
+        * [x] Raspberry: `7 x 1.6 x 6`
+    * could theoretically be split further: height is very bad - centre of gravity - flat is better
+    * [ ] Criteria
+        * [ ] absolute value
+        * [ ] lower is better
+
+* [x] Weight of the Drone:
+    * [x] Weight the drone itself (with battery), `1322 g`
+    * [x] Add onboard computers + cases (+ wifi adapter). All other cables assumed equal
+        * [x] Nano: `252 g`
+        * [x] Raspberry: `44 g`
+    * [ ] Criteria:
+        * [ ] lower is better
+        * [ ] if > 2.0 kg then 1/9
+
+* [x] Power.
+    * [x] Measured: jetson Nano - mean
+    * [x] Calculated:  Average CPU load * nominal rating: Raspbi 4.1 W 
+    * [ ] Criteria:
+       * [ ] lower is better - no hard limit
+       * [ ] relative or absolute scaling?
+
+### Bonus AHP stuff which could be used:
+* [ ] Does the system go into swap
+* [ ] The entire timing stuff, which we neglect for this
+* [ ] Process-wise monitoring
+
 ### Conclude
 We will __NOT__ take this on the drone. Research on comparing the HITL on the platforms has shown that the system is susceptible to errors, which require a fundamental redesign of the system.
 We do not see this as a failure, but as a success for the evaluation step presented in this research, preventing premature deployment with potentially severe consequences. The stepwise migration and assessment of the system performance underlines the suggestions voiced by experienced researchers with quantitative data.

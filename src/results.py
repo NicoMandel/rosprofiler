@@ -566,7 +566,7 @@ if __name__=="__main__":
     # Power
     ser = getpower(host_dicts, reddf.columns.values.tolist())
     reddf = pd.concat([reddf.transpose(), ser], axis=1).transpose()
-    print(reddf.head(n=6))
+    print(reddf)
 
     # fig, ax = plt.subplots()
     # linesofinterest = resorted_dict["CPU Load max"]["piuncompr_1_nico-pi"]

@@ -73,6 +73,7 @@ class ahp_mat:
         """
             Function to initialize the random variables for the randarray to pick from
         """
+
         if cls.poss is not None:
             print("Already Initialized.")
         else:
@@ -86,7 +87,7 @@ class ahp_mat:
             Static method.
             Returns a random array of size n conforming to the standards of the AHP 
         """
-        
+
         if cls.poss is None:
             cls.initrand()
         arr = np.ones((n,n), dtype=np.float64)
@@ -95,6 +96,27 @@ class ahp_mat:
         arr = cls.filtril(arr)
         return arr
 
+    @classmethod
+    def relpercentage(cls, val1, val2):
+        """
+            Method to calculate the relative weight using the difference in percentage. Using the formula y=8x+1
+            Which comes from linearly scaling the performance
+        """
+        
+        sub = val1-val2
+        if sub == 0.0:
+            return 1.0
+        elif sub > 0.0:
+            y = cls.scalefunc(sub)
+            return y
+        else:
+            # Use the inverse
+            sub = np.abs(sub)
+            y = cls.scalefunc(sub)
+            return 1.0/y
+    
+    # Class method to return the function y=8x+1 - rounded to nearest integer
+    scalefunc = classmethod(lambda cls, x: np.round(8.0*x+1.0))
 
     @staticmethod
     def filtril(arr):
@@ -104,7 +126,6 @@ class ahp_mat:
         """
         arr[np.tril_indices_from(arr,-1)] = 1/arr[np.triu_indices_from(arr,1)]
         return arr
-
 
 
 class analyic_hierarchy():
