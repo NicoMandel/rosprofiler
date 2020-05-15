@@ -194,14 +194,15 @@ trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.p
 
 ### 1 - running initial tests on Nano and Raspberry
 Raspberry exhibits dropouts (0-performance indicators) under minimal load. To elimiate this being due to data transfer of raw images, we use compressed images and modify the transport mode for wifi. The issue persists, so we do the same test with the nano. This does not exhibit changes, so we test the full load with compressed images on the Nano.
+**Run an initial set of tests to record some values to gauge the reasonable ranges for our comparison values** - which we then implement
 
 ### 2 - AHP
-* [ ] CPU used
-    * [ ] Not normally distributed - using the 90th percentile of maximum CPU load - robust and in line with hard performance models
-    * [ ] Criteria
-        * [ ] Higher is better
-        * [ ] Piecewise subtraction
-           * [ ] if  < 1: 1/, if > 1 -> difference scaled 
+* [x] CPU used
+    * [x] Not normally distributed - using the 90th percentile of maximum CPU load - robust and in line with hard performance models
+    * [x] Criteria
+        * [x] Higher is better
+        * [x] Piecewise subtraction
+           * [x] if  < 1: 1/, if > 1 -> difference scaled 
 
 * [ ] Memory used
     * [ ] Used Memory Max. virt mem used - not the best indicator, but sufficient - contains underlying process
@@ -213,9 +214,9 @@ Raspberry exhibits dropouts (0-performance indicators) under minimal load. To el
             * [ ] piecewise subtraction
         * [ ] Higher is better
 
-* [ ] CPU free
-    * [ ] 1 - CPU-used. as a safety for system resources and cycling things
-    * [ ] Criteria
+* [x] CPU free
+    * [x] 1 - CPU-used. as a safety for system resources and cycling things
+    * [x] Criteria
         * [ ] % of usage - relative value
             * [ ] piecewise subtraction
         * [ ] Higher is better
@@ -243,19 +244,20 @@ Raspberry exhibits dropouts (0-performance indicators) under minimal load. To el
         * [x] Nano: `12 x 6.2 x 9`
         * [x] Raspberry: `7 x 1.6 x 6`
     * could theoretically be split further: height is very bad - centre of gravity - flat is better
-    * [ ] Criteria
-        * [ ] absolute value
-        * [ ] lower is better
-        * [ ] upper hard limit? What could be used here?
+    * [x] Criteria
+        * [x] absolute value
+        * [x] lower is better
+        * [x] divide the volumes - if >10, set to 9
 
 * [x] Weight of the Drone:
     * [x] Weight the drone itself (with battery), `1322 g`
     * [x] Add onboard computers + cases (+ wifi adapter). All other cables assumed equal
         * [x] Nano: `252 g`
         * [x] Raspberry: `44 g`
-    * [ ] Criteria:
-        * [ ] lower is better
-        * [ ] if > 2.0 kg then 1/9
+    * [x] Criteria:
+        * [x] lower is better
+        * [x] if > 2.0 kg then 1/9
+        * [x] divide the weights. if >10, set to 9
 
 * [x] Power.
     * [x] Measured: jetson Nano - mean
@@ -268,6 +270,11 @@ Raspberry exhibits dropouts (0-performance indicators) under minimal load. To el
            using the decrease in flight time due to power consumption. tf = (V*(IaRating * safety) / P0 + Pe) with Pe = V*I and P0 trough t0. Then we divide t0 - tf by t0 to get the relative decrease in flight time. 
            other calculation [here](https://www.quora.com/What-is-the-power-consumption-of-a-drone-like-the-Phantom-DJI)
         * [x] relative scaling - multiplication
+
+## DO AHP FOR:
+Some cases:
+1. Do not really care about the weight, size and power, but want a lot of free space
+2. Do care about size weight and power, but do not want free space on the pc
 
 ### Bonus AHP stuff which could be used:
 * [ ] Does the system go into swap
