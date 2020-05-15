@@ -4,7 +4,7 @@
 # Make the return values for the EigenVector values easy to insert into a dataframe
 
 import numpy as np
-
+import pandas as pd
 
 class ahp_mat:
 
@@ -12,12 +12,12 @@ class ahp_mat:
     CONSISTENT = 0.10
     poss = None
 
-    def __init__(self, arr):
+    def __init__(self, arr, collist=None):
         """
             A class to calculate an ahp matrix.
             Params: a (right-triangular) matrix filled in with the appropriate values
         """
-        self.arr = arr
+        self.df = pd.DataFrame(data=arr,index=collist,columns=collist)
         self.geteig()
         self.getci()
 
@@ -31,7 +31,7 @@ class ahp_mat:
         """
             Method to set the eigenvectors/values neccessary
         """
-        val, vec = np.linalg.eig(np.array(self.arr))
+        val, vec = np.linalg.eig(np.array(self.df.values))
         # vec = vec/np.sum(vec) # Normalising the Eigenvector
         self.eigVal = val[np.argmax(val)].real
         eigVec = vec[:,np.argmax(val)].real
@@ -42,8 +42,8 @@ class ahp_mat:
         """
             Method to calculate the consistency index using the max eigenvalue 
         """
-        self.ci = (self.eigVal - self.arr.shape[0]) / (self.arr.shape[0] - 1)
-        self.consratio = self.ci / self.RANDOMCONSISTENCY[self.arr.shape[0]]
+        self.ci = (self.eigVal - self.df.shape[0]) / (self.df.shape[0] - 1)
+        self.consratio = self.ci / self.RANDOMCONSISTENCY[self.df.shape[0]]
 
     def getconsistency(self):
         """
@@ -79,7 +79,8 @@ class ahp_mat:
         else:
             vals = np.arange(start=1, stop=10)
             invvals = 1/vals
-            cls.poss = np.concatenate((vals, invvals), axis=0)
+            preposs = np.concatenate((vals, invvals), axis=0)
+            cls.poss = np.unique(preposs)
 
     @classmethod
     def getrandarray(cls, n=3):
@@ -102,7 +103,7 @@ class ahp_mat:
             Method to calculate the relative weight using the difference in percentage. Using the formula y=8x+1
             Which comes from linearly scaling the performance
         """
-        
+
         sub = val1-val2
         if sub == 0.0:
             return 1.0

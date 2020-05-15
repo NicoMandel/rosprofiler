@@ -487,6 +487,118 @@ def get_overlap(s1, s2):
     pos_a, pos_b, size = s.find_longest_match(0, len(s1), 0, len(s2))
     return s1[pos_a:pos_a+size]
 
+def process_faults(vec):
+    """
+        Function to return an array of the relative importance of faults. Uses the natural logarithm to scale accordingly
+    """
+    def calclns(vec):
+        """
+            Function to calculate the natural logarithms and return them
+        """
+
+        lnvec = np.zeros_like(vec)
+        idxs = np.where(vec>=1.0)
+        lnvec[idxs] = np.log(vec[idxs])
+        return lnvec
+
+    def lncomparison(lnval1, lnval2, maxln):
+        """
+            output array
+            indices
+            lnvec
+        """
+        # piecewise comparison
+        if lnval1 == lnval2:
+            return 1.0
+        elif lnval1 < 0.9:
+            return (9.0-maxln+lnval2)
+        elif lnval2 < 0.9:
+            return 1.0/(9.0-maxln+lnval1)
+        else:
+            out = 1.0+(max([lnval1, lnval2]) - min([lnval1, lnval2]))
+            if lnval1 > lnval2:
+                return 1.0/out
+            else:
+                return out
+
+    lnvec = calclns(vec)
+    outputarr=np.ones((lnvec.size, lnvec.size))
+    maxln = np.max(lnvec)
+    for i in range(lnvec.size):
+        for j in range(lnvec.size):
+            if i>=j:
+                continue
+            else:
+                outputarr[i,j] = lncomparison(lnvec[i], lnvec[j], maxln)
+    return outputarr
+
+
+def powerfromVI(curr, vol=5.0):
+    """
+        Function to calculate the wattage from voltage and current
+    """
+    return curr*vol
+
+def powerfromNom(vol=None, amph=4.0,t0=0.33, volpcell=3.7, cells=3, safety=0.8):
+    """
+        calculating P from values common to UAVs. Flight time at hover, battery cells, battery voltage, nominal ampere hour capacity rating
+    """
+    if vol is None:
+        vol = volpcell*cells
+    p0 = (vol * amph * safety) / t0
+    return p0
+        
+def flighttime(pe, p0, c):
+    """
+        calculating the new flight time using the additional power draw
+    """
+    tf = (c) / (p0 + pe)
+    return tf
+
+def powerstuff(vec, safety=0.8 , volpcell=3.7, cells=3, amph=4.0, t0=0.333):
+    """
+        Calculating the ballpark power draw that we are using for the uav
+        params = safety capacity, nominal voltage, amperehour-rating, flight time at hover
+        Calculating the relative reduce in flighttime - using hover values and reasonable assumptions
+    """
+    tf_vec = np.zeros_like(vec)
+    pe_vec = np.zeros_like(vec)
+    vec = vec / 1000.0            # to get amperes
+    p0 = powerfromNom(amph=amph,t0=t0,safety=safety,cells=cells,volpcell=volpcell)
+    powfunc = np.vectorize(powerfromVI)
+    pe_vec = powfunc(vec)
+    c = volpcell*cells*amph*safety
+    tffunc = np.vectorize(flighttime)
+    tf_vec = tffunc(pe_vec,p0=p0,c=c)
+    diffvec = (t0-tf_vec)/t0
+    fact = 8.0 * (min(diffvec)/max(diffvec))
+    arr = np.ones((vec.size, vec.size))
+    for i in range(vec.size):
+        for j in range(vec.size):
+            if i>=j:
+                continue
+            else:
+                arr[i,j] = powervals(diffvec[i], diffvec[j], fact)
+
+    print(vec)
+    print(arr)
+    print("Test Done")
+
+
+  
+def powervals(val1, val2, fact):
+    """
+        Function to calculate the preferred power values
+    """
+    if val1 == val2:
+        return 1.0
+    else:
+        res = (val1/val2)
+        if res<1.0:
+            return fact/res
+        else:
+            return 1/(fact*res)
+
 if __name__=="__main__":
 
     sns.set()

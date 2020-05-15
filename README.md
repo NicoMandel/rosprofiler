@@ -209,27 +209,35 @@ Raspberry exhibits dropouts (0-performance indicators) under minimal load. To el
         * [x] Raspberry Pi - `512` MB
         * [x] Nano - `4096` MB
     * [ ] Criteria
-        * [ ] % of memory used - relative value
+        * [ ] % of memory used: relative value
+            * [ ] piecewise subtraction
         * [ ] Higher is better
 
 * [ ] CPU free
     * [ ] 1 - CPU-used. as a safety for system resources and cycling things
     * [ ] Criteria
         * [ ] % of usage - relative value
+            * [ ] piecewise subtraction
         * [ ] Higher is better
 
 * [ ] Memory free
     * [ ] Avail memory Min - virt mem avail - instantly given without going into swap - very accurate
     * [ ] Criteria
         * [ ] absolute value
+            1. [ ] Take the maximum nominal value of all compared devices
+            2. [ ] Take the % of THAT
+        * [ ] %. Use piecewise subtraction
         * [ ] Higher is better
 
-* [ ] Faults
+* [x] Faults
     * [x] Amount of times the mean CPU load fell under 0.1 - indicator of system dropout from preliminary experiments
-    * [ ] Criteria
-        * [ ] absolute value
-        * [ ] > 1 very bad. If both are > 1, the ratio can be used, but both are bad. 
-
+    * [x] Criteria
+        * [x] absolute value
+        * [x] > 1 very bad. If all are > 1, the ratio can be used, but both are bad. 
+        * [x] use: 0 vs x: 9 - (ln(max/x_i)
+            and x vs 0: 1/ (9 - ln(max/x_i)
+            and x_i vs x_j: 1+ ln(x_i/x_j). if result is smaller than 1, use 1/
+            see functions [weirdstuff](./src/teststuff.py#L46) and [testotherstuff](./src/teststuff.py#L66)
 * [ ] Size
     * [x] volume of the outermost square, including case, calculated by `width*height*depth` (when looking from the front) in cm
         * [x] Nano: `12 x 6.2 x 9`
@@ -238,6 +246,7 @@ Raspberry exhibits dropouts (0-performance indicators) under minimal load. To el
     * [ ] Criteria
         * [ ] absolute value
         * [ ] lower is better
+        * [ ] upper hard limit? What could be used here?
 
 * [x] Weight of the Drone:
     * [x] Weight the drone itself (with battery), `1322 g`
@@ -251,9 +260,14 @@ Raspberry exhibits dropouts (0-performance indicators) under minimal load. To el
 * [x] Power.
     * [x] Measured: jetson Nano - mean
     * [x] Calculated:  Average CPU load * nominal rating: Raspbi 4.1 W 
-    * [ ] Criteria:
-       * [ ] lower is better - no hard limit
-       * [ ] relative or absolute scaling?
+    * [x] Criteria:
+       * [x] lower is better - no hard limit
+       * [x] relative or absolute scaling?
+           * ballpark figure: Drones run between 10 and 15 V, depending on battery size. Charge of a 4 Ah rated battery (lasts 1h @ 4Amp draw).
+           Drones have a flying time of roughly 20minutes (excluding safety, depleting about 80% of charge), estimating to 3200 draw / 1/3 hour -> leads to 9.6 A, rounding 10A , with 14V -> roughly 140 Watts
+           using the decrease in flight time due to power consumption. tf = (V*(IaRating * safety) / P0 + Pe) with Pe = V*I and P0 trough t0. Then we divide t0 - tf by t0 to get the relative decrease in flight time. 
+           other calculation [here](https://www.quora.com/What-is-the-power-consumption-of-a-drone-like-the-Phantom-DJI)
+        * [x] relative scaling - multiplication
 
 ### Bonus AHP stuff which could be used:
 * [ ] Does the system go into swap
