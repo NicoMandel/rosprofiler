@@ -248,6 +248,8 @@ Raspberry exhibits dropouts (0-performance indicators) under minimal load. To el
         * [x] absolute value
         * [x] lower is better
         * [x] divide the volumes - if >10, set to 9
+    * [ ] Alternative: use relative dimensions: max/min -> higher is better. means that one axis is significantly smaller, making it possible to be flat
+
 
 * [x] Weight of the Drone:
     * [x] Weight the drone itself (with battery), `1322 g`
@@ -255,6 +257,7 @@ Raspberry exhibits dropouts (0-performance indicators) under minimal load. To el
         * [x] Nano: `252 g`
         * [x] Raspberry: `44 g`
     * [x] Criteria:
+        * [ ] used as w / w0
         * [x] lower is better
         * [x] if > 2.0 kg then 1/9
         * [x] divide the weights. if >10, set to 9

@@ -17,6 +17,10 @@ class ahp_mat:
             A class to calculate an ahp matrix.
             Params: a (right-triangular) matrix filled in with the appropriate values
         """
+        tril = arr[np.tril_indices_from(arr,k=-1)]
+        tril0 = np.where(tril==1.0,0.0,tril)
+        if not np.all(tril0):
+            arr = self.filtrilalt(arr)
         self.df = pd.DataFrame(data=arr,index=collist,columns=collist)
         self.geteig()
         self.getci()
@@ -125,9 +129,21 @@ class ahp_mat:
             Static method.
             Returns the lower triangular matrix of the array filled in conforming to the standards of the AHP
         """
-        arr[np.tril_indices_from(arr,-1)] = 1/arr[np.triu_indices_from(arr,1)]
+        arr[np.tril_indices_from(arr,-1)] = 1.0/arr[np.triu_indices_from(arr,1)]
         return arr
-
+    
+    @staticmethod
+    def filtrilalt(arr):
+        """
+            Static alternative to filling in the lower indices of an array
+        """
+        for i in range(arr.shape[0]):
+            for j in range(arr.shape[1]):
+                if i>=j:
+                    continue
+                else:
+                    arr[j,i] = 1.0/arr[i,j]
+        return arr
 
 class analyic_hierarchy():
     """ Class to calculate the hierarchy of a Matrix of Ratios. Please Read Documentation for Details:

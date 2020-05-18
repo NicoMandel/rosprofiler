@@ -14,6 +14,13 @@ import re
 from scipy import stats
 
 from AHP import ahp_mat
+import operator
+
+from functools import reduce
+## Helper function to get a product
+def prod(iterable):
+    return reduce(operator.mul, iterable, 1)
+###
 
 def getDataframe(filename):
     """
@@ -503,7 +510,7 @@ def process_faults(vec):
         lnvec[idxs] = np.log(vec[idxs])
         return lnvec
 
-    def lncomparison(lnval1, lnval2, maxln):
+    def lncomparison(lnval1, lnval2):
         """
             output array
             indices
@@ -513,9 +520,9 @@ def process_faults(vec):
         if lnval1 == lnval2:
             return 1.0
         elif lnval1 < 0.9:
-            return (9.0-maxln+lnval2)
+            return (9.0-lnval2)
         elif lnval2 < 0.9:
-            return 1.0/(9.0-maxln+lnval1)
+            return 1.0/(9.0-lnval1)
         else:
             out = 1.0+(max([lnval1, lnval2]) - min([lnval1, lnval2]))
             if lnval1 > lnval2:
@@ -531,8 +538,29 @@ def process_faults(vec):
             if i>=j:
                 continue
             else:
-                outputarr[i,j] = lncomparison(lnvec[i], lnvec[j], maxln)
+                outputarr[i,j] = lncomparison(lnvec[i], lnvec[j])
     return outputarr
+
+def flts_naive(vec):
+    """
+        Naive way of putting the vector in: if one is > 0, assign that a 9
+    """
+    
+    outarr = np.ones((vec.size, vec.size))
+    for i in range(vec.size):
+        for j in range(vec.size):
+            if i >=j:
+                continue
+            elif vec[i] == vec[j]:
+                outarr[i,j] = 1.0
+            elif vec[j] < 0.9:
+                outarr[i,j] = 1.0/9.0            
+            elif vec[i] < 0.9:
+                outarr[i,j] = 9.0
+            else:
+                outarr[i,j] = np.log10(vec[j])/np.log10(vec[i])
+
+    return outarr
 
 
 # Comparing Power Things
@@ -574,23 +602,24 @@ def powerstuff(vec, safety=0.8 , volpcell=3.7, cells=3, amph=4.0, t0=0.333):
     tffunc = np.vectorize(flighttime)
     tf_vec = tffunc(pe_vec,p0=p0,c=c)
     diffvec = (t0-tf_vec)/t0
-    fact = 8.0 * (min(diffvec)/max(diffvec))
     arr = np.ones((vec.size, vec.size))
     for i in range(vec.size):
         for j in range(vec.size):
             if i>=j:
                 continue
             else:
-                arr[i,j] = powervals(diffvec[i], diffvec[j], fact)
+                arr[i,j] = comparestraight(diffvec[i], diffvec[j])
 
     return arr
 
 # Comparing Weight and Volume 
-def weightstuff(w1, w2):
+def weightcalc(w1, w2, w0=1382.0):
     """
         Just use the relative weights, with hard limits @ 9 and 1/9
     """
-    relw = w1/w2
+    w1rel = w1 / (w1+w0)
+    w2rel = w2 / (w2+w0)
+    relw = w1rel/w2rel
     if relw > 9.0:
         return 9.0
     elif relw < (1.0/9.0):
@@ -598,23 +627,93 @@ def weightstuff(w1, w2):
     else:
         return relw
 
-def volstuff(vol1, vol2):
+def weightstuff(df, dictnom):
     """
-        Just use the relative volume
-        TODO: use a reference volume here
+        function to calculate the relative weight
     """
-    relv = vol1/vol2
-    if relv > 9.0:
-        return 9.0
-    elif relv < (1.0/9.0):
-        return 1.0/9.0
-    else:
-        return relv
+    names = df.columns.values.tolist()
+    outarr = np.ones((df.columns.values.shape[0], df.columns.values.shape[0]))
+    w0 = dictnom["full"]
+    for i in range(outarr.shape[0]):
+        for j in range(outarr.shape[1]):
+            if i >= j:
+                continue
+            else:
+                if "pi" in names[i]:
+                    w1 = dictnom["pi"]
+                elif "nano" in names[i]:
+                    w1 = dictnom["nano"]
+                else:
+                    raise ValueError("No known volume")
+                if "pi" in names[j]:
+                    w2 = dictnom["pi"]
+                elif "nano" in names[j]:
+                    w2 = dictnom["nano"]
+                else:
+                    raise ValueError("No known volume")
+                outarr[i,j] = 1.0/weightcalc(w1,w2,w0)
+    return outarr
+    
+
+def volstuff(df, dictnom):
+    """
+        using the dataframe columns and the dictionary to construct a relative array
+    """
+    names = df.columns.values.tolist()
+    outarr = np.ones((df.columns.values.shape[0], df.columns.values.shape[0]))
+    for i in range(outarr.shape[0]):
+        for j in range(outarr.shape[1]):
+            if i >= j:
+                continue
+            else:
+                if "pi" in names[i]:
+                    v1 = dictnom["pi"]
+                elif "nano" in names[i]:
+                    v1 = dictnom["nano"]
+                else:
+                    raise ValueError("No known volume")
+                if "pi" in names[j]:
+                    v2 = dictnom["pi"]
+                elif "nano" in names[j]:
+                    v2 = dictnom["nano"]
+                else:
+                    raise ValueError("No known volume")
+                outarr[i,j] = volcalc(v1,v2)
+    return outarr
+
+def volcalcalt(v1,v2):
+    """
+        Alternative volume calculation. Using the product of all values
+    """
+    vol1=prod(v1)
+    vol2=prod(v2)
+    return comparestraight(vol1,vol2)
+
+
+def volcalc(vec_1, vec_2):
+    """
+        Taking in 2 vectors of l x w x h values.
+        Calculates the highest divide by the lowest value of each vector
+    """
+
+    v1 = volratio(vec_1)
+    v2 = volratio(vec_2)
+    return comparestraight(v1,v2)
+    
+def volratio(vec):
+    """
+        Function to calculate the ratio of lowest side to longest side
+    """
+    
+    minval = np.min(vec)
+    maxval = np.max(vec)
+    return maxval/minval
   
 def powervals(val1, val2, fact):
     """
         Function to calculate the preferred power values
     """
+    
     if val1 == val2:
         return 1.0
     else:
@@ -628,11 +727,12 @@ def powervals(val1, val2, fact):
 # Use for: CPU usage and CPU free
 # Also for % of memory used - first divide by nominal value
 # Also for free memory - use ln 
-def comparestraight(val1, val2):
+def comparestraight(val1, val2,scale=1.0):
     """
         Function for direct comparison. if values over 9, set to 9    
     """
-    rel = val1/val2
+    
+    rel = scale*(val1/val2)
     if rel > 9.0:
         return 9.0
     elif rel < (1.0/9.0):
@@ -656,32 +756,33 @@ def cpu_usage(vec):
     return outarr
 
 
-def cpu_free(vec):
+def cpu_free(vec, scale=1.0):
     """
         Function to return compared cpu free values as an array. uses comparestraight
     """
 
-    vec = 1.0 - vec
+    vec = 1.0 - (vec/100)
     outarr = np.ones((vec.size, vec.size))
+    lnvec = np.log(vec)
     for i in range(outarr.shape[0]):
         for j in range(outarr.shape[1]):
             if i >= j:
                 continue
             else:
-                outarr[i,j] = comparestraight(vec[i], vec[j])
+                outarr[i,j] = comparestraight(lnvec[i], lnvec[j], scale=scale)
     return outarr
 
 def mem_used(df, dictnom):
     """
         Function to return compared memory used values as an array. Uses comparestraight.
-        Divide by nominal value first. needs df and dict
+        Divide by nominal value first. Params: df and dict
     """
 
-    ser = df["Used Memory Max",:]
+    ser = df.loc["Used Memory max",:]
     vec = np.zeros_like(ser.values)
     cases = df.columns.values.tolist()
     for i, case in enumerate(df.columns.values.tolist()):
-        val = df["Used Memory Max", case]
+        val = df.loc["Used Memory max", case]
         if "pi" in case:
             nomm = dictnom["pi"]
         elif "nano" in case:
@@ -706,19 +807,45 @@ def memrel(val, nom):
 
 def freemem(vec):
     """
-        Function to return the free memory. Uses Comparestraight. Use the ln first
+        Function to return the free memory. Uses Comparestraight. Does not use the ln
     """
-
     lnvec = np.log(vec)
-    outarr = np.ones((lnvec.size, lnvec.size))
+    outarr = np.ones((vec.size, vec.size))
     for i in range(outarr.shape[0]):
         for j in range(outarr.shape[1]):
             if i >= j:
                 continue
             else:
-                outarr[i,j] = comparestraight(vec[i], vec[j])
+                outarr[i,j] = comparestraight(lnvec[i], lnvec[j])
     
     return outarr
+
+def freememperc(df, dictnom):
+    """
+        Alternative method to calculate the relative free memory using the nominal values of the devices
+    """
+
+    ser = df.loc["Available Memory min",:]
+    vec = np.zeros_like(ser.values)
+    cases = df.columns.values.tolist()
+    for i, case in enumerate(df.columns.values.tolist()):
+        val = df.loc["Available Memory min", case]
+        if "pi" in case:
+            nomm = dictnom["pi"]
+        elif "nano" in case:
+            nomm = dictnom["nano"]
+        else:
+            raise TypeError("Unknown Nominal memory value for this type of device")
+        vec[i] = memrel(val,nomm)
+    outarr = np.ones((vec.size, vec.size))
+    for i in range(outarr.shape[0]):
+        for j in range(outarr.shape[1]):
+            if i>=j:
+                continue
+            else:
+                outarr[i,j] = comparestraight(vec[i], vec[j])
+    return outarr
+
 
 
 if __name__=="__main__":
@@ -785,10 +912,10 @@ if __name__=="__main__":
     # fig, ax = plt.subplots()
     # ax.plot(ser)
     # plt.plot()
-    print("do_stuff_here")                                                        
+    # print("do_stuff_here")                                                        
     cdf = consolid_values(resorted_dict, perc=0.75)
     reddf = cdf.filter(like="nico", axis=1)
-    print(reddf.head())
+    # print(reddf.head())
 
     # get additional values out:
     # Dictionary subset:
@@ -796,17 +923,19 @@ if __name__=="__main__":
     # Faults - 0 drops 
     ser = getfaults(host_dicts, reddf.columns.values.tolist())
     reddf = pd.concat([reddf.transpose(), ser], axis=1).transpose()
-    print(reddf.head())
+    # print(reddf.head())
     # Power
     ser = getpower(host_dicts, reddf.columns.values.tolist())
     reddf = pd.concat([reddf.transpose(), ser], axis=1).transpose()
     print(reddf)
 
     # TODO: CONTINUE RIGHT HERE! put the values from the df into the functions for each column
+    pivol = np.array([0.07, 0.016, 0.06])
+    nanovol = np.array([0.12, 0.062, 0.06])
+
     dictvol = {}
-    dictvol["pi"] =  0.07 * 0.016 * 0.06
-    dictvol["nano"] = 0.12 * 0.062 * 0.09
-    dictvol["ref"] = 0.1 * 0.1 * 0.1 # equivalent to a l of added volume
+    dictvol["pi"] = pivol
+    dictvol["nano"] = nanovol
 
     dictwt = {}
     dictwt["pi"] = 0.044
@@ -816,7 +945,52 @@ if __name__=="__main__":
     dictmem = {}
     dictmem["nano"] = 4096.0
     dictmem["pi"] = 512.0
-    cpu_vals = reddf["CPU Load Max",:]
+    # Getting the dataframes out - using the values from the original df
+    # memfreearr = freemem(reddf.loc["Available Memory min"].to_numpy().astype(np.float64))
+    memfreearr = freememperc(reddf, dictmem)
+    memfreedf = pd.DataFrame(data=memfreearr, index=reddf.columns.values.tolist(), columns=reddf.columns.values.tolist())
+    cpufreearr = cpu_free(reddf.loc["CPU Load max"].to_numpy().astype(np.float64))
+    cpufreedf = pd.DataFrame(data=cpufreearr, index=reddf.columns.values.tolist(), columns=reddf.columns.values.tolist())
+    cpuusedarr = cpu_usage(reddf.loc["CPU Load max"].to_numpy().astype(np.float64))
+    cpuuseddf = pd.DataFrame(data=cpuusedarr, index=reddf.columns.values.tolist(), columns=reddf.columns.values.tolist())
+    # fltsarr = process_faults(reddf.loc["Faults"].to_numpy().astype(np.float64))
+    fltsarr = flts_naive(reddf.loc["Faults"].to_numpy().astype(np.float64))
+    fltsdf = pd.DataFrame(data=fltsarr, columns=reddf.columns.values.tolist(), index=reddf.columns.values.tolist())
+    pwrarr = powerstuff(reddf.loc["Power"].to_numpy().astype(np.float64))
+    pwrdf = pd.DataFrame(data=pwrarr, columns=reddf.columns.values.tolist(), index=reddf.columns.values.tolist())
+    memusedarr = mem_used(reddf, dictmem)
+    memuseddf = pd.DataFrame(data=memusedarr, index=reddf.columns.values.tolist(), columns=reddf.columns.values.tolist())
+    wtarr = weightstuff(reddf, dictwt)
+    wtdf = pd.DataFrame(data=wtarr, index=reddf.columns.values.tolist(), columns=reddf.columns.values.tolist())
+    volarr = volstuff(reddf, dictvol)
+    voldf = pd.DataFrame(data=volarr, index=reddf.columns.values.tolist(), columns=reddf.columns.values.tolist())
+    print("Initial test done")
+
+    # Putting the stuff into AHPs
+    # 1: Putting it into a dictionary
+
+    df_dict = {}
+    df_dict["CPU Used"] = cpuuseddf
+    df_dict["Mem Used"] = memuseddf
+    df_dict["CPU Free"] = cpufreedf
+    df_dict["Mem Free"] = memfreedf
+    df_dict["Power"] = pwrdf
+    df_dict["Weight"] = wtdf
+    df_dict["Volume"] = voldf
+    df_dict["Faults"] = fltsdf
+
+    ahp_dict = {}
+    for key, df in df_dict.items():
+        ahp = ahp_mat(df.values,collist=df.columns.values.tolist())
+        # print(ahp.df)
+        # print(ahp.df)
+        if ahp.getconsistency():
+            print("{} is consistent: {}".format(key, ahp.ci))
+        else:
+            print("{} Not consistent. Ratio: {}".format(key,ahp.consratio))
+    print("Required consistency: {}".format(ahp.CONSISTENT))
+    print("Test Done")
+    # TODO: ALL of them are consistent. Now do our own relative weighting
 
     # fig, ax = plt.subplots()
     # linesofinterest = resorted_dict["CPU Load max"]["piuncompr_1_nico-pi"]
