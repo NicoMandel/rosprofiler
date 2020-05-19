@@ -990,6 +990,7 @@ if __name__=="__main__":
         else:
             print("{} Not consistent. Ratio: {}".format(key,ahp.consratio))
     print("Required consistency: {}".format(ahp.CONSISTENT))
+    
     # TODO: ALL of them are consistent. Now do our own relative weighting
     l1names = ["Weight", "Size", "Power", "Computation"]
     l2names = ["Performance", "Compatibility","Reliability"]
@@ -1033,7 +1034,7 @@ if __name__=="__main__":
     ahpl3compat.eigdf = ahpl3compat.eigdf*ahpl2.eigdf.loc["Compatibility"]
     # print(ahpl3perf.eigdf)
     # print(ahpl3compat.eigdf)
-    # TODO: Sanity checks here by summing!
+
 
     # Calculating the global priorites is done. Now plug in the values
     # print("Relative values: {}".format(ahp_dict["CPU Used"].eigdf))

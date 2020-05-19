@@ -104,7 +104,7 @@ class ahp_mat:
         arr = np.ones((n,n), dtype=np.float64)
         ind = np.triu_indices_from(arr,1)
         arr[ind] = np.random.choice(cls.poss,size=ind[0].size)
-        arr = cls.filtril(arr)
+        # arr = cls.filtrilaltalt(arr)
         return arr
 
     @classmethod
