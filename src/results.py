@@ -608,7 +608,7 @@ def powerstuff(vec, safety=0.8 , volpcell=3.7, cells=3, amph=4.0, t0=0.333):
             if i>=j:
                 continue
             else:
-                arr[i,j] = comparestraight(diffvec[i], diffvec[j])
+                arr[i,j] = 1.0/comparestraight(diffvec[i], diffvec[j])
 
     return arr
 
@@ -976,22 +976,99 @@ if __name__=="__main__":
     df_dict["Mem Free"] = memfreedf
     df_dict["Power"] = pwrdf
     df_dict["Weight"] = wtdf
-    df_dict["Volume"] = voldf
+    df_dict["Size"] = voldf
     df_dict["Faults"] = fltsdf
 
     ahp_dict = {}
     for key, df in df_dict.items():
-        ahp = ahp_mat(df.values,collist=df.columns.values.tolist())
+        ahp = ahp_mat(df.values,collist=df.columns.values.tolist(),name=key)
         # print(ahp.df)
         # print(ahp.df)
         if ahp.getconsistency():
-            print("{} is consistent: {}".format(key, ahp.ci))
+            print("{} is consistent. Adding to dictionary".format(key))
+            ahp_dict[key] = ahp
         else:
             print("{} Not consistent. Ratio: {}".format(key,ahp.consratio))
     print("Required consistency: {}".format(ahp.CONSISTENT))
-    print("Test Done")
     # TODO: ALL of them are consistent. Now do our own relative weighting
+    l1names = ["Weight", "Size", "Power", "Computation"]
+    l2names = ["Performance", "Compatibility","Reliability"]
+    l3names = ["CPU", "Memory"]
 
+    l1df = pd.DataFrame(data=np.ones((len(l1names), len(l1names))), index=l1names, columns=l1names)
+    compdf = pd.DataFrame(data=np.ones((len(l2names), len(l2names))), index=l2names, columns=l2names)
+    utildf = pd.DataFrame(data=np.ones((len(l3names), len(l3names))), index=l3names, columns=l3names)
+    capacitydf = pd.DataFrame(data=np.ones((len(l3names), len(l3names))), index=l3names, columns=l3names)
+
+    l1df.at["Weight", "Size"] = 2.0
+    l1df.at["Weight", "Power"] = 1.0/3.0
+    l1df.at["Weight", "Computation"] = 1.0/4.0
+    l1df.at["Size", "Power"] = 1.0/5.0
+    l1df.at["Size", "Computation"] = 1.0/7.0
+    l1df.at["Power", "Computation"] = 1.0/2.0
+   
+    ahpl1 = ahp_mat(l1df.to_numpy(), collist=l1names)
+    print(ahpl1.eigdf)
+    print("Consistency of L1: {}".format(ahpl1.consratio))
+    
+
+    compdf.at["Performance", "Compatibility"] = 4.0 
+    compdf.at["Performance", "Reliability" ] = 1.0/3.0 
+    compdf.at["Compatibility", "Reliability" ] = 1.0/9.0
+
+    ahpl2 = ahp_mat(compdf.to_numpy(), collist=l2names)
+    print(ahpl2.eigdf)
+    print("Consistency of L2: {}".format(ahpl2.consratio))
+
+    ahpl3perf = ahp_mat(utildf.to_numpy(), collist=l3names)
+    ahpl3compat = deepcopy(ahpl3perf)
+    print(ahpl3perf.eigdf)
+    print("Consistency of L3: {}".format(ahpl3perf.consratio))
+    
+    # At L3 - do twice
+    # Global value for performance is performance * computation
+
+    ahpl2.eigdf = ahpl2.eigdf*ahpl1.eigdf.loc["Computation"]
+    ahpl3perf.eigdf = ahpl3perf.eigdf*ahpl2.eigdf.loc["Performance"]
+    ahpl3compat.eigdf = ahpl3compat.eigdf*ahpl2.eigdf.loc["Compatibility"]
+    # print(ahpl3perf.eigdf)
+    # print(ahpl3compat.eigdf)
+    # TODO: Sanity checks here by summing!
+
+    # Calculating the global priorites is done. Now plug in the values
+    # print("Relative values: {}".format(ahp_dict["CPU Used"].eigdf))
+    # print("Relative Weighting: {}".format(ahpl3perf.eigdf.loc["CPU"]))
+    # L3
+    cpu_used_vals = ahp_dict["CPU Used"].eigdf*ahpl3perf.eigdf.loc["CPU"]
+    # print("Resulting Values: {}".format(cpu_used_vals))
+    mem_used_vals = ahp_dict["Mem Used"].eigdf*ahpl3perf.eigdf.loc["Memory"]
+    cpu_free_vals = ahp_dict["CPU Free"].eigdf*ahpl3compat.eigdf.loc["CPU"]
+    mem_free_vals = ahp_dict["Mem Free"].eigdf*ahpl3compat.eigdf.loc["Memory"]
+
+    # L2
+    faults_vals = ahp_dict["Faults"].eigdf*ahpl2.eigdf.loc["Reliability"]
+    
+    # L1
+    pow_vals = ahp_dict["Power"].eigdf*ahpl1.eigdf.loc["Power"]
+    wt_vals = ahp_dict["Weight"].eigdf*ahpl1.eigdf.loc["Weight"]
+    vol_vals = ahp_dict["Size"].eigdf*ahpl1.eigdf.loc["Size"]
+
+    defs = np.zeros((pow_vals.shape[0], 8))
+    fullcollist = ["Size", "Power", "Weight", "CPU Used", "Memory Used", "CPU Free", "Memory Free", "Faults"]
+    finaldf = pd.DataFrame(data=defs, index=pow_vals.index.tolist(), columns=fullcollist)
+    print(finaldf)
+    finaldf.at[:,"Size"] = vol_vals["Relative Weight"]
+
+    finaldf.at[:,"Weight"] = wt_vals["Relative Weight"]
+    finaldf.at[:,"Power"] = pow_vals["Relative Weight"]
+    finaldf.at[:,"CPU Used"] = cpu_used_vals["Relative Weight"]
+    finaldf.at[:,"Memory Used"] = mem_used_vals["Relative Weight"]
+    finaldf.at[:,"CPU Free"] = cpu_free_vals["Relative Weight"]
+    finaldf.at[:,"Memory Free"] = mem_free_vals["Relative Weight"]
+    finaldf.at[:,"Faults"] = faults_vals["Relative Weight"]
+    finaldf["Sum"] = finaldf.sum(axis=1)
+    print(finaldf)
+    print("Test Done")
     # fig, ax = plt.subplots()
     # linesofinterest = resorted_dict["CPU Load max"]["piuncompr_1_nico-pi"]
     # ax.plot(linesofinterest)

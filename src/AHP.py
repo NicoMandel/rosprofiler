@@ -12,7 +12,7 @@ class ahp_mat:
     CONSISTENT = 0.10
     poss = None
 
-    def __init__(self, arr, collist=None):
+    def __init__(self, arr, collist=None, name=None):
         """
             A class to calculate an ahp matrix.
             Params: a (right-triangular) matrix filled in with the appropriate values
@@ -20,16 +20,21 @@ class ahp_mat:
         tril = arr[np.tril_indices_from(arr,k=-1)]
         tril0 = np.where(tril==1.0,0.0,tril)
         if not np.all(tril0):
-            arr = self.filtrilalt(arr)
+            arr = self.filtrilaltalt(arr)
+        self.name = name
         self.df = pd.DataFrame(data=arr,index=collist,columns=collist)
+        # Init of values that get set later on
+        self.ci = None
+        self.eigdf = None
+        self.consratio = None
         self.geteig()
         self.getci()
 
     def getRelWeights(self):
         """
-            method to return the relative weights 
+            method to return the relative weights. Returns a dataframe
         """
-        return self.eigVec
+        return self.eigdf
 
     def geteig(self):
         """
@@ -39,7 +44,8 @@ class ahp_mat:
         # vec = vec/np.sum(vec) # Normalising the Eigenvector
         self.eigVal = val[np.argmax(val)].real
         eigVec = vec[:,np.argmax(val)].real
-        self.eigVec = eigVec / np.sum(eigVec)
+        eigVec = eigVec / np.sum(eigVec)
+        self.eigdf = pd.DataFrame(data=eigVec,index=self.df.columns.tolist(),columns=["Relative Weight"])
         
 
     def getci(self):
@@ -143,6 +149,16 @@ class ahp_mat:
                     continue
                 else:
                     arr[j,i] = 1.0/arr[i,j]
+        return arr
+
+    @staticmethod
+    def filtrilaltalt(arr):
+        """
+            Third alternative to fill the lower triangular matrix. More numpy-esque
+        """
+
+        inds = np.triu_indices_from(arr,k=1)
+        arr[(inds[1], inds[0])] = 1.0/arr[inds]
         return arr
 
 class analyic_hierarchy():
