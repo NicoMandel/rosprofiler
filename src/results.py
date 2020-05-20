@@ -13,8 +13,10 @@ from copy import deepcopy
 import re
 from scipy import stats
 
-from AHP import ahp_mat
+from .AHP import ahp_mat
 import operator
+
+import pickle
 
 from functools import reduce
 ## Helper function to get a product
@@ -991,7 +993,14 @@ if __name__=="__main__":
             print("{} Not consistent. Ratio: {}".format(key,ahp.consratio))
     print("Required consistency: {}".format(ahp.CONSISTENT))
     
-    # TODO: ALL of them are consistent. Now do our own relative weighting
+    # Section on Pickling. RUN ONLY ONCE
+    # parentdir = os.path.dirname(__file__)
+    # dname = os.path.abspath(os.path.join(parentdir, '..'))
+    # picklefile = os.path.join(dname, 'RelDict.pickle')
+    # with open(picklefile, 'wb') as f:
+    #     pickle.dump(ahp_dict, f)
+
+    # ALL of them are consistent. Now do our own relative weighting
     l1names = ["Weight", "Size", "Power", "Computation"]
     l2names = ["Performance", "Compatibility","Reliability"]
     l3names = ["CPU", "Memory"]
@@ -1068,6 +1077,8 @@ if __name__=="__main__":
     finaldf.at[:,"Memory Free"] = mem_free_vals["Relative Weight"]
     finaldf.at[:,"Faults"] = faults_vals["Relative Weight"]
     finaldf["Sum"] = finaldf.sum(axis=1)
+    bestsol = finaldf["Sum"].idxmax()
+    print("Best Option with given Parameters is: {}".format(bestsol))
     print(finaldf)
     print("Test Done")
     # fig, ax = plt.subplots()

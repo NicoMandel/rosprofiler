@@ -30,6 +30,16 @@ class ahp_mat:
         self.geteig()
         self.getci()
 
+    def __mul__(self, other):
+        """
+            Multiplication override. Allows for multiplication with another ahp object
+        """
+
+        return self.eigdf.to_numpy()*other.eigdf.to_numpy()
+
+    __rmul__= __mul__
+
+
     def getRelWeights(self):
         """
             method to return the relative weights. Returns a dataframe
