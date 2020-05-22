@@ -13,7 +13,7 @@ from copy import deepcopy
 import re
 from scipy import stats
 
-from .AHP import ahp_mat
+from AHP import ahp_mat
 import operator
 
 import pickle

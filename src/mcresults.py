@@ -6,6 +6,8 @@ import pickle
 import os.path
 import pandas as pd
 import numpy as np 
+from collections import OrderedDict
+from copy import deepcopy
 
 def getmax(df):
     """
@@ -45,14 +47,34 @@ if __name__=="__main__":
     keys = tuple(["L1", "L2", "L3.Perf", "L3.Compa"])
     options = tuple(collectdf.columns.values.tolist())
     
-    # wgtsf = os.path.join(pdir,'weightingsdict.pickle')
-    # with open(wgtsf, 'rb') as f:
-    #     wgtsdict = pickle.load(f)
+    wgtsf = os.path.join(pdir,'weightingsdict.pickle')
+    with open(wgtsf, 'rb') as f:
+        wgtsdict = pickle.load(f)
 
     # Get out the maximum value for each of those things - TODO: most of these are double-loaded - check that we get the one where it is the biggest
     maxrows = getmax(collectdf)
 
-    # TODO: use the tuple coming out to build a quadruplet of name - maximum - and AHP leading to the results
-    
+    # TODO: use the tuple coming out to build a quadruplet of name - maximum - index - and AHP leading to the results
+    # Turn into 3 dictionaries
+    ahp_dict = OrderedDict()
+    maxrow_dict = OrderedDict()
+    maxval_dict = OrderedDict()
+    for t in maxrows:
+        key = t[0]
+        row = t[1]
+        ahp_dict[key] = wgtsdict[row]
+        maxrow_dict[key] = deepcopy(collectdf.loc[row].T)
+        maxval_dict[key] = collectdf.loc[row].max()
+
+    separa = "====================================================================="
+    # Print the AHPs which give the best results for the cases that we have
+    for key, ldict in ahp_dict.items():
+        print("Option: {}, Value: {}\n".format(key, maxval_dict[key]))
+        print("Other Options:\n{}\n".format(maxrow_dict[key].T))
+        for k, lev in ldict.items():
+            print(k)
+            print(lev.df)
+            print("\n")
+        print(separa)
 
     print("Test Done")
