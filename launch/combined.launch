@@ -6,11 +6,12 @@
     <arg name="sim_case" default="1"/>
     <machine name="$(arg machine)" address="$(arg address)" user="$(arg user)" env-loader="/home/nico/catkin_ws/devel/env_new.sh" timeout="10.0" default="false" />
     <arg name="filename" default="case_$(arg sim_case)"/>
+    <arg name="full" default="false"/>
 
     <!--   Raspberry FCU URL -->
-    <!-- <arg name="fcu_url" default="/dev/ttyAMA0:921600"/> -->
+    <arg name="fcu_url" default="/dev/ttyAMA0:921600"/>
     <!--   Nano FCU URL -->
-    <arg name="fcu_url" default="/dev/ttyTHS1:921600"/>
+    <!-- <arg name="fcu_url" default="/dev/ttyTHS1:921600"/> -->
 
     <arg name="logging" default="False"/>
     <arg name="compressed" default="False"/>
@@ -27,7 +28,9 @@
     </include>
 
     <!-- Stuff for the hitl -->
-    <include file="$(find rosprofiler)/launch/base_hitl_full.launch">
+    <arg unless="$(arg full)" name="hitl_file" value="base_hitl"/>
+    <arg if="$(arg full)" name="hitl_file" value="base_hitl_full"/>
+    <include file="$(find rosprofiler)/launch/$(arg hitl_file).launch">
         <arg name="fcu_url" value="$(arg fcu_url)"/>
         <arg name="machine" value="$(arg machine)"/>
         <arg name="sim_case" value="$(arg sim_case)"/>

@@ -177,7 +177,7 @@ trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.p
     * [ ] disabled display service - save ram
     * [ ] enabled high power mode - power supply, also peripherals, see [these considerations](https://forums.developer.nvidia.com/t/power-supply-considerations-for-jetson-nano-developer-kit/71637)
     * [ ] jetpack version does not support zram
-    * [ ] custom opencv version - compiled from source
+    * [ ] custom opencv version - compiled from source. issues with Opencv see [this video](https://www.youtube.com/watch?v=dey9uTXuTo8)
     * [ ] enabled swapfile - 2G - sd card longevity
     * [ ] connected on ethernet - image transport
     * [ ] tmux
@@ -187,6 +187,7 @@ trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.p
     * [ ] ntp time sync
     * [ ] WiFi only on 2.4 GhZ - limited compatible modules available for Nano
         * [ ] Start once to sync up mavlink parameters
+    * [ ] Power management and scaling of clock cycles, see [this video](https://www.youtube.com/watch?time_continue=8&v=UMJfYkCqmo4&feature=emb_logo)
 
 * Setting niceness values below 0 requires super user privileges 
 

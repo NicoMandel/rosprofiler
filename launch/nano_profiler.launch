@@ -20,7 +20,7 @@
 
     <group if="$(arg logging)">
         <node pkg="rosprofiler" name="profiling_client" type="client.py" output="screen"/>
-        <node pkg="rosprofiler" name="timing_client" type="timing.py" output="screen"/>
+        <!-- <node pkg="rosprofiler" name="timing_client" type="timing.py" output="screen"/> -->
     </group>
 
 </launch>

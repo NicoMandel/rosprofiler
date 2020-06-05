@@ -392,8 +392,9 @@ def consolid_values(bdict, skipna=True, alpha=1e-3, perc=0.9):
     bdf = pd.DataFrame(data=None, index=list(bdict.keys()), columns=list(bdict.values())[0].columns.tolist())
     for key, df in bdict.items():
         # bdf.at[key] = df.max(skipna=skipna)
-        
-        vals = np.nanquantile(df.values, perc, axis=0)
+        prevals = df.values.to_numpy()
+        prevals = prevals[np.nonzero(prevals)]
+        vals = np.nanquantile(prevals, perc, axis=0)
         bdf.at[key] = vals
 
     print(bdf.head())

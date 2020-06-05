@@ -5,11 +5,14 @@
     <arg name="compressed" default="False"/>
     <arg name="logging" default="False"/>
     <arg name="visualize" default="False"/>
+    <arg name="vehicle" default="iris"/>
+    <arg name="gui" default="True"/>
 
     <!-- Stuff for the sitl -->
     <include file="$(find aruco_client)/launch/word2vec_barebones.launch">
         <arg name="sim_case" value="$(arg sim_case)"/>
         <arg name="compressed" value="$(arg compressed)"/>
+        <arg name="gui" value="$(arg gui)"/>
     </include>
 
     <node pkg="aruco_client" type="wp_node" name="wp_node" output="screen"/>
