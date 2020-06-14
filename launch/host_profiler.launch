@@ -1,18 +1,21 @@
 <launch>
     <arg name="sim_case" default="1"/>
     <arg name="logging" default="False"/>
+    <arg name="filename" default="case_$(arg sim_case)_pc" />
 
     <!-- Loading monitoring parameters -->
-    <rosparam command="load" file="$(find rosprofiler)/config/profileparams.yaml"/>
+    <rosparam command="load" file="$(find rosprofiler)/config/sitl_params.yaml"/>
 
     <!-- Monitoring Namespace -->
-    <param name="filename" type="string" value="case_$(arg sim_case)_pc"/>
+
+    <!-- Monitoring Namespace -->
+    <param name="filename" type="string" value="$(arg filename)"/>
 
     <!-- Host Nodes -->
     <node pkg="rosprofiler" type="rosgrapher" name="rosgrapher" output="screen"/>
     <node pkg="rosprofiler" type="rosprofilerNano" name="$(anon rosprofiler)" output="screen"/>
     <node if="$(arg logging)" pkg="rosprofiler" name="profiling_client" type="client.py" output="screen"/>
-    <node pkg="rosprofiler" name="timing_client" type="timing.py" output="screen"/>
+    <!-- <node pkg="rosprofiler" name="timing_client" type="timing.py" output="screen"/> -->
 
 
 </launch>

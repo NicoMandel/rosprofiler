@@ -17,6 +17,9 @@ class ProfileClient:
         # Get parameters from server to find out what to track and where to write it
         host_dict = rospy.get_param('hosts', default=None)
         
+        rospy.wait_for_message("/host_statistics", NanoStatistics)
+        rospy.sleep(5)
+
         if not host_dict:
             self.host_dict = {}
             rospy.logwarn("No Machines specified. Logging all nodes on all machines")
@@ -59,8 +62,6 @@ class ProfileClient:
                                 break
                         break
         
-        rospy.wait_for_message("/host_statistics", NanoStatistics)
-        rospy.sleep(5)
 
         # Setup work for the hosts
         self.extracted_statistics_host = ["Time", "Duration", "Samples", "CPU Count", "Power",
@@ -130,6 +131,8 @@ class ProfileClient:
             swap_available: mean, std, min
         """
         key = msg.hostname.lower()
+        
+
         if key in self.host_dict.keys():
             temp_df = pd.DataFrame(columns=self.extracted_statistics_host).set_index("Time")
 
@@ -168,8 +171,9 @@ class ProfileClient:
             temp_df.at[t, "Swap Available min"] = (int(pd.np.floor(msg.swap_avail_min)) >> 20)
 
             target_df = self.host_df_dict[key]
+            # rospy.loginfo('Write {}'.format(key))
             self.host_df_dict[key] = self.concat_df(target_df, temp_df)
-
+            # rospy.loginfo('Written {}'.format(key))
        
     def node_callback(self, msg):
         """ Callback on the node_statistics topic. Given Values are:
@@ -215,6 +219,7 @@ class ProfileClient:
                         # 3. Concatenate the dfs
                         self.node_df_dict[idx] = self.concat_df(target_df, temp_df)
                         break
+  
 
 
     # Helper functions        
@@ -253,7 +258,7 @@ if __name__=="__main__":
     
     try:
         rospy.spin()
-    except rospy.ROSInterruptException as e:
+    except (rospy.ROSInterruptException, rospy.TransportException) as e:
         rospy.logerr_once(e)
 
     

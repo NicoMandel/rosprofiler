@@ -169,6 +169,9 @@ trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.p
     * [ ] Power issues, see this link from [qutas wiki](https://github.com/qutas/info/wiki/General-Computing#wifi-issues)
     * [ ] Git commit hash/release of used packages
     * [ ] IF there is no subscriber to a topic - there will be no message sent - TCP sockets. [If a tree falls in the forest, will it make a sound?](https://answers.ros.org/question/173813/why-publish-if-no-one-is-subscribing/) - extra topics should not elevate bandwidth
+    * [ ] Turn off Wifi powersaving mode
+    * [ ] baud rate settings
+    * [ ] `image topic` desynchronization common - is okay, because usually the PI would not be waiting for topic on the network - despite compressed imgs
     * [ ] timesync rate dropped during WiFi connection - assumed because of mavros subscriber on host pc
         * Test by:
             * [ ] Running the node in question on the same pc
@@ -185,11 +188,14 @@ trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.p
     * [ ] SSH key access - roslaunch
     * [ ] compiled image_transport_plugins - for compressed image transport
     * [ ] ntp time sync
+    * [ ] Turn off WiFi powersaving
+    * [ ] Baud rate settings
     * [ ] WiFi only on 2.4 GhZ - limited compatible modules available for Nano
         * [ ] Start once to sync up mavlink parameters
     * [ ] Power management and scaling of clock cycles, see [this video](https://www.youtube.com/watch?time_continue=8&v=UMJfYkCqmo4&feature=emb_logo)
 
 * Setting niceness values below 0 requires super user privileges 
+* [ ] Issues through TCPRos connection resets
 
 ## Result Processing
 

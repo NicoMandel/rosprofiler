@@ -1,0 +1,26 @@
+# these are the things that our rosprofile client will read and determine what it will inspect
+hosts:
+    # jetson Nano 
+    # "192.168.1.120": False
+    
+    # Raspberry Pi
+    # "nico-pi": False
+
+    # "nano" : False
+
+    "SEF-PA144858": False
+        # - "knowledgebase"
+        # - "mavros"
+        # - "ml_"
+        # - "profile"
+        # - "wp_node"
+        # - "timing_cl"
+    #     - "talk"
+
+topics:
+    # - "chatter_loopback"
+    - "knowledgebase/"
+    - "mavros/setpoint_position/local"
+
+sampleRate: 0.2
+updateRate: 2

@@ -7,11 +7,12 @@
     <arg name="visualize" default="False"/>
     <arg name="vehicle" default="iris"/>
     <arg name="gui" default="True"/>
+    <arg name="filename" default="case_$(arg sim_case)_pc"/>
 
     <!-- Stuff for the sitl -->
     <include file="$(find aruco_client)/launch/word2vec_barebones.launch">
         <arg name="sim_case" value="$(arg sim_case)"/>
-        <arg name="compressed" value="$(arg compressed)"/>
+        <!-- <arg name="compressed" value="$(arg compressed)"/> -->
         <arg name="gui" value="$(arg gui)"/>
     </include>
 
@@ -37,6 +38,7 @@
     <include file="$(find rosprofiler)/launch/host_profiler.launch">
         <arg name="sim_case" value="$(arg sim_case)"/>
         <arg name="logging" value="$(arg logging)"/>
+        <arg name="filename" value="$(arg filename)"/>
     </include>
 
     <!-- 5. Shutdown file - listening to ensure shutdown happens -->
