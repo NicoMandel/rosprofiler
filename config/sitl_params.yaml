@@ -8,12 +8,12 @@ hosts:
 
     # "nano" : False
 
-    "SEF-PA144858": False
-        # - "knowledgebase"
-        # - "mavros"
-        # - "ml_"
-        # - "profile"
-        # - "wp_node"
+    "SEF-PA144858":
+        - "knowledgebase"
+        - "mavros"
+        - "ml_"
+        - "profile"
+        - "wp_node"
         # - "timing_cl"
     #     - "talk"
 

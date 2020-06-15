@@ -201,7 +201,12 @@ trial run to link to a line in a commit [here](./src/rosprofiler/profiler_Nano.p
 
 ### 1 - running initial tests on Nano and Raspberry
 Raspberry exhibits dropouts (0-performance indicators) under minimal load. To elimiate this being due to data transfer of raw images, we use compressed images and modify the transport mode for wifi. The issue persists, so we do the same test with the nano. This does not exhibit changes, so we test the full load with compressed images on the Nano.
-**Run an initial set of tests to record some values to gauge the reasonable ranges for our comparison values** - which we then implement
+* [x] **Run an initial set of tests to record some values to gauge the reasonable ranges for our comparison values** - which we then implement
+    * [x] Results:
+        * [x] image-transport compressed
+        * [x] Control groups
+* [x] Delete first and last 5 rows - to omit boundary effects, see [here](./src/results.py#L36)
+
 
 ### 2 - AHP
 * [x] CPU used

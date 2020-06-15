@@ -33,6 +33,8 @@ def getDataframe(filename):
 
         # This gets rid of the column name, which makes for an empty row. If we can live with the empty row, then we can use something else here
         for df in df_dict.values():
+            # Remove the first and last 5 rows - boundary effects
+            df = df.iloc[5:-5]
             df.index.name = None
         return df_dict
     except FileNotFoundError as e:
@@ -259,6 +261,54 @@ def compare_host_dicts(host_dict):
 
     return big_dict
 
+def drizzleUpDictionary(host_dict, device, out_dict):
+    """
+        Function to drizzle up the massive dictionaries.
+        Case order in key as a tuple:
+        1. Device
+        2. partial/full
+        3. Compressed/Uncompressed
+        4. Wifi/Ethernet
+        
+    """
+    # out_dict = {}
+    for cname, hdict in host_dict.items():
+        cnamesplit = cname.split('_')
+        if cnamesplit[0].lower() == "wifi":
+            case = tuple([device, "partial", "compressed", "wifi"])
+        elif cnamesplit[0].lower() == "full":
+            case = tuple([device, "full", "compressed", "wifi"])
+        elif cnamesplit[0] == "wireUncompr":
+            case = tuple([device, "partial", "uncompressed", "ethernet"])
+        elif cnamesplit[0] == "wireCompr":
+            case = tuple([device, "partial", "compressed", "ethernet"])
+        elif cnamesplit[0] == "wireFullCompr":
+            case = tuple([device, "full", "compressed", "ethernet"])
+        elif cnamesplit[0] == "pc":                                   # Do not need this case for the host comparison
+            case = tuple([device, None, "compressed", None])
+        elif cnamesplit[0] == "compr": 
+            case = tuple([device, "partial", "compressed", "wifi"])
+        else:
+            raise TypeError("Name not known: {}".format(cnamesplit[0]))
+
+        # Get the device host dictionary
+        for k, hdf in hdict.items():
+                if device in k:
+                    df = hdf
+                    break
+        
+        # Try to append to the list of dfs. If the list does not exist (Key Error), create it
+        try:
+            caselist = out_dict[case]
+            caselist.append(df)
+            out_dict[case] = caselist
+        except KeyError:
+            out_dict[case] = [df]
+        # caselist = out_dict.setdefault(case, [df])
+        # if len(caselist) > 1:
+        #     caselist.append(df)
+        # out_dict[case] = caselist
+    # return out_dict
 
 def filepaths(directory_string, file_string=None):
     """
@@ -863,29 +913,26 @@ if __name__=="__main__":
     parentDir = os.path.dirname(__file__)
     fname = os.path.abspath(os.path.join(parentDir, '..','results'+result_host,'case_'+str(counter)+result_host+'_'+filetype+'.xlsx'))
 
-    # 2. Get the dataframe from the filename
-    # try:
-    #     df_dict = getDataframe(fname)
-    # except FileNotFoundError as e:
-    #     print("Filename : {} Invalid, you muppet. Come on, try again.".format(fname))
-    
-    # if len(df_dict) < 2:
-    #     first = next(iter(df_dict))
-    #     first_df = df_dict[first]
-    # else:
-    #     # What to do with the dataframes
-    #     for key, df in df_dict.items():
-    #         print("\n\nKey: {}, Df: ".format(key))
-    #         print(df.head())
-    #         first_df = df.copy(deep=True)
-    #         break
-    #         # print(df.iloc[0,0:3])
-
     # print(first_df.columns)
     filetype = 'host'
     filedicts = filepaths("results_nano", filetype)
     pc_dicts = filepaths("results_pc", filetype)
     rasp_dicts = filepaths("results_pi", filetype)
+
+    # TODO: CONTINUE HERE
+    devices = ["nano", "sef", "pi"]
+    compression = ["compressed", "uncompr"]
+    connection = ["WiFi", "Ethernet"]
+    composition = ["Full", "Partial"]
+
+    # Look at the naming of the things
+    out_dict = {}
+    drizzleUpDictionary(filedicts, "nano", out_dict)
+    drizzleUpDictionary(pc_dicts, "sef", out_dict)
+    drizzleUpDictionary(rasp_dicts, "pi", out_dict)
+    print("Test - Check the out_dict")
+    # TODO: CONTINUE HERE WITH THE CONSOLIDATION OF THE VALUES 
+    # TODO: Append all the dataframes the values - 
 
     # Adding other dictionaries by hand
     filedicts["sitl_1_hosts"] = list(pc_dicts.values())[0] # renaming the pc_dicts dictionary
@@ -932,7 +979,6 @@ if __name__=="__main__":
     reddf = pd.concat([reddf.transpose(), ser], axis=1).transpose()
     print(reddf)
 
-    # TODO: CONTINUE RIGHT HERE! put the values from the df into the functions for each column
     pivol = np.array([0.07, 0.016, 0.06])
     nanovol = np.array([0.12, 0.062, 0.06])
 
