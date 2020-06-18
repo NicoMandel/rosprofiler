@@ -15,7 +15,7 @@ from scipy import stats
 
 from AHP import ahp_mat
 import operator
-
+from openpyxl import load_workbook
 import pickle
 
 from functools import reduce
@@ -310,6 +310,16 @@ def drizzleUpDictionary(host_dict, device, out_dict):
         # out_dict[case] = caselist
     # return out_dict
 
+def removeNanRows(host_dict):
+    """
+        Function to remove nan rows from all the dfs
+    """
+
+    for case, df_dict in host_dict.items():
+        for param, df in df_dict.items():
+            df.dropna(inplace=True)
+
+
 def filepaths(directory_string, file_string=None):
     """
         Searches from the base directory of the file for the directory with the directory string
@@ -430,25 +440,70 @@ def compare_vals(bdict, filter_list=["^(CPU L).*(max)$", "^(Used).*(Mem).*(max)$
     print("test Done")
     return outdfdict
 
+def newcomparisonfunc(bdict, filter_list=["^(Samples)","^(CPU L).*(max)$", "^(Used).*(Mem).*(max)$", "^(Avail).*(Mem).*(min)$", "^(Swap).*(U).*(max)$", "^(Pow).*"]):
+    """
+        Function to compare the comparisons
+        has to put out a dictionary of dictionaries
+    """
+
+    df = list(bdict.values())[0][0]
+    collist = df.columns.values.tolist()
+
+    fillist = filtercolumns(collist, filter_list)
+    outdfdict = {}
+    for k in bdict.keys():
+        ndict = {}
+        for fil in fillist:
+            df = pd.DataFrame()
+            ndict[fil] = df
+        outdfdict[k] = ndict
+
+    for key, listofdfs in bdict.items():
+        for i, df in enumerate(listofdfs): 
+            ndf = df.reset_index(drop=True)
+            ndf = ndf.filter(items=fillist)
+
+            for col in ndf.columns.values.tolist():
+                fdf = ndf.filter(like=col, axis=1)
+                fdf.columns = [i]
+                prior_df = outdfdict[key][col]
+                post_df = pd.concat([prior_df, fdf], axis=1, sort=False)
+                outdfdict[key][col] = post_df
+
+    print("Internal Test done")
+    return outdfdict
+
+
+
 def consolid_values(bdict, skipna=True, alpha=1e-3, perc=0.9):
     """
         A function to turn the big dictionary into a dataframe by using consolidated values
     """
-    cpu_df = bdict['CPU Load max']
-    normality = normtest(cpu_df.values)
-    print("Normality test failed: {} of {}. Using Median".format(normality[np.where(normality<alpha)].shape[0],normality.shape[0]))
-    print("Normality test Done. Proceeding with array building")
-    print("Looking for max values")
-    bdf = pd.DataFrame(data=None, index=list(bdict.keys()), columns=list(bdict.values())[0].columns.tolist())
-    for key, df in bdict.items():
+    # cpu_df = bdict['CPU Load max']
+    # normality = normtest(cpu_df.values)
+    # print("Normality test failed: {} of {}. Using Quantiles".format(normality[np.where(normality<alpha)].shape[0],normality.shape[0]))
+    # print("Normality test Done. Proceeding with array building")
+    # print("Looking for max values")
+    indices = list(bdict.keys())
+    val = list(bdict.keys())[0]
+    case = bdict[val]
+    columns = list(case.keys())
+    # columns = list(list(bdict.keys())[0].values().keys())
+    bdf = pd.DataFrame(data=None, index=indices, columns=columns)
+    for case, dfdict in bdict.items():
+        for key, df in dfdict.items():
+            prevals = df.to_numpy()
+            prevals = prevals[np.nonzero(prevals)]
+            val = np.nanquantile(prevals,perc)
+            bdf.at[case,key] = val
         # bdf.at[key] = df.max(skipna=skipna)
-        prevals = df.values.to_numpy()
-        prevals = prevals[np.nonzero(prevals)]
-        vals = np.nanquantile(prevals, perc, axis=0)
-        bdf.at[key] = vals
+        # prevals = df.values.to_numpy()
+        # prevals = prevals[np.nonzero(prevals)]
+        # vals = np.nanquantile(prevals, perc, axis=0)
+        # bdf.at[key] = vals
 
-    print(bdf.head())
-    print("Big Df done")
+    # print(bdf.head())
+    # print("Big Df done")
     return bdf
 
 def getfaults(bdict, target_list):
@@ -465,22 +520,47 @@ def getfaults(bdict, target_list):
         ct = np.count_nonzero(ndf.values < 0.1)
         ser.at[name] = ct
     return ser
-        
 
-def getpower(bdict, target_list, pinom=4.1):
+def redeffaults(bdict, thresh=7.5):
+    """
+        Fault redefinition: Adds Boolean DF for each case. Removes the "Samples" Entry
+    """
+    for dfdict in bdict.values():
+        df = dfdict["Samples"]
+        mask = df < thresh
+        dfdict["Faults"] = deepcopy(mask)
+        del dfdict["Samples"]
+
+def maskfaults(bdict):
+    """
+        Masking the faults
+    """
+    faults_ct = {}
+    for k, dfdict in bdict.items():
+        maskdf = dfdict["Faults"]
+        mask = maskdf.any(axis=1)
+        faults_ct[k] = mask.sum()
+        for _, df in dfdict.items():
+            df = df[~mask]
+        del dfdict["Faults"]
+
+    return faults_ct
+
+def getpower(bdict, pinom=4.1):
     """
         Function to calculate the median power usage.
-        Appends it to the target df
         receives a list
         returns a Series
     """
-    ser = pd.Series(index=target_list, name="Power")
-    for name in target_list:
-        df = bdict[name]
+
+    ser = {}
+    for k, v in bdict.items():
+        df = v["Power"]
+        name = k[0]
         ndf = df.reset_index(drop=True, inplace=False)
-        ndf = ndf.filter(like="Power")
+        # ndf = ndf.filter(like="Power")
         if np.sum(ndf.values) < 0: # Since the values if the file is not found is negative, we use the CPU_Load_max
-            alt = df.filter(regex="^(CPU L).*(max)")
+            alt = v["CPU Load max"]
             if "pi" in name:
                 # vol = pivol
                 # amp = piamp
@@ -489,12 +569,14 @@ def getpower(bdict, target_list, pinom=4.1):
                 # This gives waaay to high values, use nominal wattage instead: 4.1
                 avg = np.mean(alt.values)
                 power = avg * pinom * 10
+            elif "sef" in name:
+                power=-1.0
             else:
-                print("Error. Do not know this kind of device")
+                print("Do not know this kind of device")
                 power=-1.0
         else:
             power = np.mean(ndf.values)
-        ser.at[name] = power
+        ser[k] = power
     return ser
 
 
@@ -606,9 +688,12 @@ def flts_naive(vec):
                 continue
             elif vec[i] == vec[j]:
                 outarr[i,j] = 1.0
-            elif vec[j] < 0.9:
-                outarr[i,j] = 1.0/9.0            
-            elif vec[i] < 0.9:
+            elif vec[j] < 1.1:
+                if vec[i] < 1.1:
+                    outarr[i,j] = 1.0
+                else:
+                    outarr[i,j] = 1.0/9.0            
+            elif vec[i] < 1.1:
                 outarr[i,j] = 9.0
             else:
                 outarr[i,j] = np.log10(vec[j])/np.log10(vec[i])
@@ -684,23 +769,23 @@ def weightstuff(df, dictnom):
     """
         function to calculate the relative weight
     """
-    names = df.columns.values.tolist()
-    outarr = np.ones((df.columns.values.shape[0], df.columns.values.shape[0]))
+    names = df.index.values.tolist()
+    outarr = np.ones((len(names), len(names)))
     w0 = dictnom["full"]
     for i in range(outarr.shape[0]):
         for j in range(outarr.shape[1]):
             if i >= j:
                 continue
             else:
-                if "pi" in names[i]:
+                if "pi" in names[i][0]:
                     w1 = dictnom["pi"]
-                elif "nano" in names[i]:
+                elif "nano" in names[i][0]:
                     w1 = dictnom["nano"]
                 else:
                     raise ValueError("No known volume")
-                if "pi" in names[j]:
+                if "pi" in names[j][0]:
                     w2 = dictnom["pi"]
-                elif "nano" in names[j]:
+                elif "nano" in names[j][0]:
                     w2 = dictnom["nano"]
                 else:
                     raise ValueError("No known volume")
@@ -712,22 +797,22 @@ def volstuff(df, dictnom):
     """
         using the dataframe columns and the dictionary to construct a relative array
     """
-    names = df.columns.values.tolist()
-    outarr = np.ones((df.columns.values.shape[0], df.columns.values.shape[0]))
+    names = df.index.values.tolist()
+    outarr = np.ones((len(names), len(names)))
     for i in range(outarr.shape[0]):
         for j in range(outarr.shape[1]):
             if i >= j:
                 continue
             else:
-                if "pi" in names[i]:
+                if "pi" in names[i][0]:
                     v1 = dictnom["pi"]
-                elif "nano" in names[i]:
+                elif "nano" in names[i][0]:
                     v1 = dictnom["nano"]
                 else:
                     raise ValueError("No known volume")
-                if "pi" in names[j]:
+                if "pi" in names[j][0]:
                     v2 = dictnom["pi"]
-                elif "nano" in names[j]:
+                elif "nano" in names[j][0]:
                     v2 = dictnom["nano"]
                 else:
                     raise ValueError("No known volume")
@@ -813,44 +898,18 @@ def cpu_free(vec, scale=1.0):
     """
         Function to return compared cpu free values as an array. uses comparestraight
     """
-
     vec = 1.0 - (vec/100)
     outarr = np.ones((vec.size, vec.size))
-    lnvec = np.log(vec)
+    # lnvec = np.log(vec)
     for i in range(outarr.shape[0]):
         for j in range(outarr.shape[1]):
             if i >= j:
                 continue
             else:
-                outarr[i,j] = comparestraight(lnvec[i], lnvec[j], scale=scale)
+                outarr[i,j] = comparestraight(vec[i], vec[j], scale=scale)
+    # print(outarr)
     return outarr
 
-def mem_used(df, dictnom):
-    """
-        Function to return compared memory used values as an array. Uses comparestraight.
-        Divide by nominal value first. Params: df and dict
-    """
-
-    ser = df.loc["Used Memory max",:]
-    vec = np.zeros_like(ser.values)
-    cases = df.columns.values.tolist()
-    for i, case in enumerate(df.columns.values.tolist()):
-        val = df.loc["Used Memory max", case]
-        if "pi" in case:
-            nomm = dictnom["pi"]
-        elif "nano" in case:
-            nomm = dictnom["nano"]
-        else:
-            raise TypeError("Unknown Nominal memory value for this type of device")
-        vec[i] = memrel(val,nomm)
-    outarr = np.ones((vec.size, vec.size))
-    for i in range(outarr.shape[0]):
-        for j in range(outarr.shape[1]):
-            if i>=j:
-                continue
-            else:
-                outarr[i,j] = comparestraight(vec[i], vec[j])
-    return outarr
 
 def memrel(val, nom):
     """
@@ -873,19 +932,19 @@ def freemem(vec):
     
     return outarr
 
-def freememperc(df, dictnom):
+def memperc(df, dictnom, column_name):
     """
         Alternative method to calculate the relative free memory using the nominal values of the devices
     """
 
-    ser = df.loc["Available Memory min",:]
+    ser = df[column_name]
     vec = np.zeros_like(ser.values)
-    cases = df.columns.values.tolist()
-    for i, case in enumerate(df.columns.values.tolist()):
-        val = df.loc["Available Memory min", case]
-        if "pi" in case:
+    # cases = df.index.values.tolist()
+    for i, case in enumerate(df.index.values.tolist()):
+        val = df.loc[case, column_name]
+        if "pi" in case[0]:
             nomm = dictnom["pi"]
-        elif "nano" in case:
+        elif "nano" in case[0]:
             nomm = dictnom["nano"]
         else:
             raise TypeError("Unknown Nominal memory value for this type of device")
@@ -900,6 +959,68 @@ def freememperc(df, dictnom):
     return outarr
 
 
+def makeMultiIndex(df, levelnames = ("device", "load", "compression", "network")):
+    """
+        Method to turn the tuples into a multiindex
+    """
+    tuples = df.index.values.tolist()
+    columns = df.columns.values.tolist()
+    data = deepcopy(df.to_numpy())
+    multiindex = pd.MultiIndex.from_tuples(tuples,names=levelnames)
+    newdf = pd.DataFrame(data=data, index=multiindex, columns=columns)
+    return newdf
+
+def parse_file(fname):
+    """
+        Function to parse a xlsx file
+    """
+    out_dict={}
+    xls = pd.ExcelFile(fname)
+    dfL1 = pd.read_excel(xls, "L1", index_col=0)
+    dfL1.fillna(1.0, inplace=True)
+    out_dict["L1"] = dfL1
+    dfL2 = pd.read_excel(xls, "L2", index_col=0)
+    dfL2.fillna(1.0, inplace=True)
+    out_dict["L2"] = dfL2
+    dfL31 = pd.read_excel(xls, "L3.1", index_col=0)
+    dfL31.fillna(1.0, inplace=True)
+    out_dict["L3.1"] = dfL31
+    dfL32 = pd.read_excel(xls, "L3.2", index_col=0)
+    dfL32.fillna(1.0, inplace=True)
+    out_dict["L3.2"] = dfL32
+    return out_dict
+
+def writeToFile(df, fname, sheet_name="Results"):
+    """
+        File to write the results into the same document as it is being read from
+    """
+    wb = load_workbook(fname)
+    if sheet_name in wb.sheetnames:
+        return False
+    else:
+        writer = pd.ExcelWriter(fname, engine = 'openpyxl')
+        writer.book = wb
+        df.to_excel(writer, sheet_name=sheet_name)
+        writer.save()
+        writer.close()
+        return True
+        
+def nodestuff(pdir):
+    """
+        The stuff for reading through the node files
+    """
+    bdict = {}
+    filetype='node'
+    filedicts = filepaths("results_nano", filetype)
+    pc_dicts = filepaths("results_pc", filetype)
+    rasp_dicts = filepaths("results_pi", filetype)
+
+    drizzleUpDictionary(filedicts,"nano",bdict)
+    drizzleUpDictionary(pc_dicts,"sef",bdict)
+    drizzleUpDictionary(rasp_dicts,"pi",bdict)
+
+    print("Test Done")
+
 
 if __name__=="__main__":
 
@@ -912,72 +1033,71 @@ if __name__=="__main__":
     # result_host = '_nano'
     parentDir = os.path.dirname(__file__)
     fname = os.path.abspath(os.path.join(parentDir, '..','results'+result_host,'case_'+str(counter)+result_host+'_'+filetype+'.xlsx'))
-
-    # print(first_df.columns)
-    filetype = 'host'
-    filedicts = filepaths("results_nano", filetype)
-    pc_dicts = filepaths("results_pc", filetype)
-    rasp_dicts = filepaths("results_pi", filetype)
-
-    # TODO: CONTINUE HERE
     devices = ["nano", "sef", "pi"]
     compression = ["compressed", "uncompr"]
     connection = ["WiFi", "Ethernet"]
     composition = ["Full", "Partial"]
+    
+    # TODO: NODES
+    nodestuff(parentDir)
 
-    # Look at the naming of the things
-    out_dict = {}
-    drizzleUpDictionary(filedicts, "nano", out_dict)
-    drizzleUpDictionary(pc_dicts, "sef", out_dict)
-    drizzleUpDictionary(rasp_dicts, "pi", out_dict)
-    print("Test - Check the out_dict")
-    # TODO: CONTINUE HERE WITH THE CONSOLIDATION OF THE VALUES 
-    # TODO: Append all the dataframes the values - 
+    # print(first_df.columns)
+    pdir = os.path.abspath(os.path.join(parentDir,'..','tmp'))
+    dfpickle = 'ConsolidDF.pickle'
+    dfpf = os.path.join(pdir,dfpickle)
+    try:
+        with open(dfpf, 'rb') as f:
+            cdf = pickle.load(f)
+        print("File {} loaded successfully".format(dfpf))
+    except FileNotFoundError:
+        print("File {} Not found. Proceeding with loading prior data and writing file".format(dfpf))    
+        relpfname = 'OutDict.pickle'
 
-    # Adding other dictionaries by hand
-    filedicts["sitl_1_hosts"] = list(pc_dicts.values())[0] # renaming the pc_dicts dictionary
-    filedicts["picompr_1_hosts"] = rasp_dicts["compr_1_hosts"]
-    filedicts["piuncompr_1_hosts"] = rasp_dicts["uncompr_1_hosts"]
+        outpickf = os.path.join(pdir, relpfname)
+        try:
+            with open(outpickf, 'rb') as f:
+                out_dict = pickle.load(f)
+            print("Out_df successfully loaded")
+        except FileNotFoundError:
+            filetype = 'host'
+            filedicts = filepaths("results_nano", filetype)
+            pc_dicts = filepaths("results_pc", filetype)
+            rasp_dicts = filepaths("results_pi", filetype)
+            out_dict = {}
+            drizzleUpDictionary(filedicts, "nano", out_dict)
+            drizzleUpDictionary(pc_dicts, "sef", out_dict)
+            drizzleUpDictionary(rasp_dicts, "pi", out_dict)
 
-    # node_dicts = compare_dicts(filedicts, matching="filename")
-    host_dicts = compare_host_dicts(filedicts)
-    print("Something Something")
-    # df.columns = df.columns.str.replace(' ', '_')
-    # plot_host_df(first_df)
-    # compiled_df = summarize_node_df(df_dict)
-    # plot_node_df_dict(compiled_df)
+            with open(outpickf, 'wb') as f:
+                pickle.dump(out_dict, f)
+            print("Pickle File dumped")
+    
+        # TODO: CONTINUE HERE WITH THE CONSOLIDATION OF THE VALUES
+        # Filterlist = ["^(CPU L).*(max)$", "^(Used M).*(max)$", "^(Avail).*(Mem).*(min)$", "^(Swap U).*(max)$"]
+        case_dict = newcomparisonfunc(out_dict)
+        # 3. Remove all rows that contain NaN values
+        removeNanRows(case_dict)
 
-    ###### New Shit below this line
-    # Plotting the values from entire processes
-    # plot_processes(node_dicts)
+        # 4. redefining faults - for each case, return a tuple where the case is true
+        redeffaults(case_dict)
 
-    # Compare only the values of interest in this case - for HOSTS
-    resorted_dict = compare_vals(host_dicts)
+        # 5. Using the faults to mask the results
+        faults_ct = maskfaults(case_dict)
 
-    # On the resorted dict, turn it into a df and work from there
-    # ser = resorted_dict['CPU Load max']["piuncompr_1_nico-pi"]
-    # print(ser.head())
-    # np.nanpercentile(ser.values, 0.9, axis=0)
-    # print("")
-    # fig, ax = plt.subplots()
-    # ax.plot(ser)
-    # plt.plot()
-    # print("do_stuff_here")                                                        
-    cdf = consolid_values(resorted_dict, perc=0.75)
-    reddf = cdf.filter(like="nico", axis=1)
-    # print(reddf.head())
+        # 6. Use the out_dict to get the power values
+        pow_dict = getpower(case_dict)
 
-    # get additional values out:
-    # Dictionary subset:
-    # subdict = {k: host_dicts.get(k) for k in reddf.columns.values.tolist()}
-    # Faults - 0 drops 
-    ser = getfaults(host_dicts, reddf.columns.values.tolist())
-    reddf = pd.concat([reddf.transpose(), ser], axis=1).transpose()
-    # print(reddf.head())
-    # Power
-    ser = getpower(host_dicts, reddf.columns.values.tolist())
-    reddf = pd.concat([reddf.transpose(), ser], axis=1).transpose()
-    print(reddf)
+        # Extract the values of interest
+        cdf = consolid_values(case_dict, perc=0.75)
+        for k,v in faults_ct.items():
+            cdf.at[k, "Faults"] = v
+        for k,v in pow_dict.items():
+            cdf.at[k, "Power"] = v
+        cdf.fillna(value=0,inplace=True)
+        # print(cdf)
+        with open(dfpf, 'wb') as f:
+                pickle.dump(cdf, f)
+        print("File {} dumped successfully".format(dfpf))
 
     pivol = np.array([0.07, 0.016, 0.06])
     nanovol = np.array([0.12, 0.062, 0.06])
@@ -994,30 +1114,78 @@ if __name__=="__main__":
     dictmem = {}
     dictmem["nano"] = 4096.0
     dictmem["pi"] = 512.0
+
+    # Get the FULL DF 
+    vol_of_pi = prod(pivol)*1000
+    vol_of_nano = prod(nanovol)*1000
+
+    # Removing the SITL stuff
+    for keys in cdf.index.tolist():
+        if "sef" in keys[0]:
+            key = keys
+            continue
+        elif "pi" in keys[0]:
+            cdf.at[keys,"Volume"] = vol_of_pi
+            cdf.at[keys, "Weight"] = dictwt["pi"]
+        elif "nano" in keys[0]:
+            cdf.at[keys,"Volume"] = vol_of_nano
+            cdf.at[keys, "Weight"] = dictwt["nano"]
+    # pc_ser = cdf[("sef", None, "compressed", None)]
+    sth = cdf.T
+    sth_new = deepcopy(sth[key])
+    # pc_ser = deepcopy(cdf.loc[key])
+    cdf.drop(key, axis=0, inplace=True)
+    # print(cdf)
+    # print(cdf)
+    newdf = makeMultiIndex(cdf)
+    # print(newdf)
+    xlf = os.path.join(pdir,'MultiIndex.xlsx')
+    if not os.path.exists(xlf):
+        with pd.ExcelWriter(xlf) as writer:
+            newdf.to_excel(writer,merge_cells=False)
+        print("File {} Did not exist. Written".format(xlf))
+    else:
+        print("File {} Already exists. Not written.".format(xlf))
+
+    sdf = newdf.xs('wifi', level='network')
+    sxlf = os.path.join(pdir, 'FinalOptions.xlsx')
+    if not os.path.exists(sxlf):
+        with pd.ExcelWriter(sxlf) as writer:
+            sdf.to_excel(writer)
+        print("File {} Did not exist. Written".format(sxlf))
+    else:
+        print("File {} Already existed. Not Written".format(sxlf))
+
+    print(sdf)
     # Getting the dataframes out - using the values from the original df
     # memfreearr = freemem(reddf.loc["Available Memory min"].to_numpy().astype(np.float64))
-    memfreearr = freememperc(reddf, dictmem)
-    memfreedf = pd.DataFrame(data=memfreearr, index=reddf.columns.values.tolist(), columns=reddf.columns.values.tolist())
-    cpufreearr = cpu_free(reddf.loc["CPU Load max"].to_numpy().astype(np.float64))
-    cpufreedf = pd.DataFrame(data=cpufreearr, index=reddf.columns.values.tolist(), columns=reddf.columns.values.tolist())
-    cpuusedarr = cpu_usage(reddf.loc["CPU Load max"].to_numpy().astype(np.float64))
-    cpuuseddf = pd.DataFrame(data=cpuusedarr, index=reddf.columns.values.tolist(), columns=reddf.columns.values.tolist())
-    # fltsarr = process_faults(reddf.loc["Faults"].to_numpy().astype(np.float64))
-    fltsarr = flts_naive(reddf.loc["Faults"].to_numpy().astype(np.float64))
-    fltsdf = pd.DataFrame(data=fltsarr, columns=reddf.columns.values.tolist(), index=reddf.columns.values.tolist())
-    pwrarr = powerstuff(reddf.loc["Power"].to_numpy().astype(np.float64))
-    pwrdf = pd.DataFrame(data=pwrarr, columns=reddf.columns.values.tolist(), index=reddf.columns.values.tolist())
-    memusedarr = mem_used(reddf, dictmem)
-    memuseddf = pd.DataFrame(data=memusedarr, index=reddf.columns.values.tolist(), columns=reddf.columns.values.tolist())
-    wtarr = weightstuff(reddf, dictwt)
-    wtdf = pd.DataFrame(data=wtarr, index=reddf.columns.values.tolist(), columns=reddf.columns.values.tolist())
-    volarr = volstuff(reddf, dictvol)
-    voldf = pd.DataFrame(data=volarr, index=reddf.columns.values.tolist(), columns=reddf.columns.values.tolist())
-    print("Initial test done")
+    memfreearr = memperc(sdf, dictmem, column_name="Available Memory min")
+    memfreedf = pd.DataFrame(data=memfreearr, index=sdf.index, columns=sdf.index)
+    cpufreearr = cpu_free(sdf["CPU Load max"].to_numpy().astype(np.float64))
+    cpufreedf = pd.DataFrame(data=cpufreearr, index=sdf.index, columns=sdf.index)
+    cpuusedarr = cpu_usage(sdf["CPU Load max"].to_numpy().astype(np.float64))
+    cpuuseddf = pd.DataFrame(data=cpuusedarr, index=sdf.index, columns=sdf.index)
+    # fltsarr = process_faults(cdf.loc["Faults"].to_numpy().astype(np.float64))
+    fltsarr = flts_naive(sdf["Faults"].to_numpy().astype(np.float64))
+    fltsdf = pd.DataFrame(data=fltsarr, columns=sdf.index, index=sdf.index)
+    pwrarr = powerstuff(sdf["Power"].to_numpy().astype(np.float64))
+    pwrdf = pd.DataFrame(data=pwrarr, columns=sdf.index, index=sdf.index)
+    memusedarr = memperc(sdf, dictmem, column_name="Used Memory max")
+    memuseddf = pd.DataFrame(data=memusedarr, index=sdf.index, columns=sdf.index)
+    wtarr = weightstuff(sdf, dictwt)
+    wtdf = pd.DataFrame(data=wtarr, index=sdf.index, columns=sdf.index)
+    volarr = volstuff(sdf, dictvol)
+    voldf = pd.DataFrame(data=volarr, index=sdf.index, columns=sdf.index)
+    # print(memuseddf)
+    # print(wtdf)
+    # print(voldf)
+    # print(fltsdf)
+    print("=====================================================================")
+    print("First Phase done. Host results are collected. Proceeding with the AHP.")
+    print("=====================================================================")
 
     # Putting the stuff into AHPs
     # 1: Putting it into a dictionary
-
     df_dict = {}
     df_dict["CPU Used"] = cpuuseddf
     df_dict["Mem Used"] = memuseddf
@@ -1030,7 +1198,7 @@ if __name__=="__main__":
 
     ahp_dict = {}
     for key, df in df_dict.items():
-        ahp = ahp_mat(df.values,collist=df.columns.values.tolist(),name=key)
+        ahp = ahp_mat(df,name=key)
         # print(ahp.df)
         # print(ahp.df)
         if ahp.getconsistency():
@@ -1041,79 +1209,71 @@ if __name__=="__main__":
     print("Required consistency: {}".format(ahp.CONSISTENT))
     
     # Section on Pickling. RUN ONLY ONCE
-    # parentdir = os.path.dirname(__file__)
-    # dname = os.path.abspath(os.path.join(parentdir, '..'))
-    # picklefile = os.path.join(dname, 'RelDict.pickle')
-    # with open(picklefile, 'wb') as f:
-    #     pickle.dump(ahp_dict, f)
+    picklefile = os.path.join(pdir, 'RelDict.pickle')
+    if not os.path.exists(picklefile):
+        print("Picklefile {} does not exist. Dumping.".format(picklefile))
+        with open(picklefile, 'wb') as f:
+            pickle.dump(ahp_dict, f)
+    else:
+        print("File {} already exists. Not Writing".format(picklefile))
+
+        
 
     # ALL of them are consistent. Now do our own relative weighting
     l1names = ["Weight", "Size", "Power", "Computation"]
     l2names = ["Performance", "Compatibility","Reliability"]
     l3names = ["CPU", "Memory"]
 
-    l1df = pd.DataFrame(data=np.ones((len(l1names), len(l1names))), index=l1names, columns=l1names)
-    compdf = pd.DataFrame(data=np.ones((len(l2names), len(l2names))), index=l2names, columns=l2names)
-    utildf = pd.DataFrame(data=np.ones((len(l3names), len(l3names))), index=l3names, columns=l3names)
-    capacitydf = pd.DataFrame(data=np.ones((len(l3names), len(l3names))), index=l3names, columns=l3names)
+    #### Parse the Excel File
+    fname = "Case4.xlsx"
+    floc = os.path.join(pdir,fname)
+    weightsdict = parse_file(floc)
 
-    l1df.at["Weight", "Size"] = 2.0
-    l1df.at["Weight", "Power"] = 1.0/3.0
-    l1df.at["Weight", "Computation"] = 1.0/4.0
-    l1df.at["Size", "Power"] = 1.0/5.0
-    l1df.at["Size", "Computation"] = 1.0/7.0
-    l1df.at["Power", "Computation"] = 1.0/2.0
-   
-    ahpl1 = ahp_mat(l1df.to_numpy(), collist=l1names)
-    print(ahpl1.eigdf)
-    print("Consistency of L1: {}".format(ahpl1.consratio))
-    
+    ahp_wts_dict = {}
+    for k, ldf in weightsdict.items():
+        ahp = ahp_mat(ldf, name=k)
+        print("Level: {}, Consistency, {}, Eigenvalues:\n{}".format(
+            k, ahp.consratio, ahp.eigdf
+        ))
+        if not ahp.getconsistency():
+            print("Level {} Not consistent. Please revise.".format(k))
+        ahp_wts_dict[k] = ahp
 
-    compdf.at["Performance", "Compatibility"] = 4.0 
-    compdf.at["Performance", "Reliability" ] = 1.0/3.0 
-    compdf.at["Compatibility", "Reliability" ] = 1.0/9.0
+    print("=====================================================================")
+    print("Second Phase done - Read relative Consistency File. Multiplying Results with Weights.")
+    print("=====================================================================")
+    l2wts = ahp_wts_dict["L2"]
+    nl2wts = l2wts.eigdf * ahp_wts_dict["L1"].eigdf.loc["Computation"]
+    l2wts.eigdf = nl2wts
 
-    ahpl2 = ahp_mat(compdf.to_numpy(), collist=l2names)
-    print(ahpl2.eigdf)
-    print("Consistency of L2: {}".format(ahpl2.consratio))
-
-    ahpl3perf = ahp_mat(utildf.to_numpy(), collist=l3names)
-    ahpl3compat = deepcopy(ahpl3perf)
-    print(ahpl3perf.eigdf)
-    print("Consistency of L3: {}".format(ahpl3perf.consratio))
-    
-    # At L3 - do twice
-    # Global value for performance is performance * computation
-
-    ahpl2.eigdf = ahpl2.eigdf*ahpl1.eigdf.loc["Computation"]
-    ahpl3perf.eigdf = ahpl3perf.eigdf*ahpl2.eigdf.loc["Performance"]
-    ahpl3compat.eigdf = ahpl3compat.eigdf*ahpl2.eigdf.loc["Compatibility"]
-    # print(ahpl3perf.eigdf)
-    # print(ahpl3compat.eigdf)
-
-
-    # Calculating the global priorites is done. Now plug in the values
-    # print("Relative values: {}".format(ahp_dict["CPU Used"].eigdf))
-    # print("Relative Weighting: {}".format(ahpl3perf.eigdf.loc["CPU"]))
     # L3
-    cpu_used_vals = ahp_dict["CPU Used"].eigdf*ahpl3perf.eigdf.loc["CPU"]
-    # print("Resulting Values: {}".format(cpu_used_vals))
-    mem_used_vals = ahp_dict["Mem Used"].eigdf*ahpl3perf.eigdf.loc["Memory"]
-    cpu_free_vals = ahp_dict["CPU Free"].eigdf*ahpl3compat.eigdf.loc["CPU"]
-    mem_free_vals = ahp_dict["Mem Free"].eigdf*ahpl3compat.eigdf.loc["Memory"]
+    l31wts = ahp_wts_dict["L3.1"]
+    nl31wts = l31wts.eigdf * ahp_wts_dict["L2"].eigdf.loc["Performance"]
+    l31wts.eigdf = nl31wts
+
+    l32wts = ahp_wts_dict["L3.2"]
+    nl32wts = l32wts.eigdf * ahp_wts_dict["L2"].eigdf.loc["Compatibility"]
+    l32wts.eigdf = nl32wts
+
+    # Calculating the global priorites is done. Now plug in the values from bottom up
+    # L3
+    cpu_used_vals = ahp_dict["CPU Used"].eigdf*ahp_wts_dict["L3.1"].eigdf.loc["CPU"]
+    mem_used_vals = ahp_dict["Mem Used"].eigdf*ahp_wts_dict["L3.1"].eigdf.loc["Memory"]
+    cpu_free_vals = ahp_dict["CPU Free"].eigdf*ahp_wts_dict["L3.2"].eigdf.loc["CPU"]
+    mem_free_vals = ahp_dict["Mem Free"].eigdf*ahp_wts_dict["L3.2"].eigdf.loc["Memory"]
 
     # L2
-    faults_vals = ahp_dict["Faults"].eigdf*ahpl2.eigdf.loc["Reliability"]
+    faults_vals = ahp_dict["Faults"].eigdf*ahp_wts_dict["L2"].eigdf.loc["Reliability"]
     
     # L1
-    pow_vals = ahp_dict["Power"].eigdf*ahpl1.eigdf.loc["Power"]
-    wt_vals = ahp_dict["Weight"].eigdf*ahpl1.eigdf.loc["Weight"]
-    vol_vals = ahp_dict["Size"].eigdf*ahpl1.eigdf.loc["Size"]
+    pow_vals = ahp_dict["Power"].eigdf*ahp_wts_dict["L1"].eigdf.loc["Power"]
+    wt_vals = ahp_dict["Weight"].eigdf*ahp_wts_dict["L1"].eigdf.loc["Weight"]
+    vol_vals = ahp_dict["Size"].eigdf*ahp_wts_dict["L1"].eigdf.loc["Size"]
 
-    defs = np.zeros((pow_vals.shape[0], 8))
     fullcollist = ["Size", "Power", "Weight", "CPU Used", "Memory Used", "CPU Free", "Memory Free", "Faults"]
-    finaldf = pd.DataFrame(data=defs, index=pow_vals.index.tolist(), columns=fullcollist)
-    print(finaldf)
+    defs = np.zeros((pow_vals.shape[0], len(fullcollist)))
+    finaldf = pd.DataFrame(data=defs, index=ahp_dict["Power"].df.index, columns=fullcollist)
+    # print(finaldf)
     finaldf.at[:,"Size"] = vol_vals["Relative Weight"]
 
     finaldf.at[:,"Weight"] = wt_vals["Relative Weight"]
@@ -1126,7 +1286,14 @@ if __name__=="__main__":
     finaldf["Sum"] = finaldf.sum(axis=1)
     bestsol = finaldf["Sum"].idxmax()
     print("Best Option with given Parameters is: {}".format(bestsol))
+    finaldf.index = finaldf.index.droplevel("compression")
     print(finaldf)
+    # Function to write to file
+    written = writeToFile(finaldf, floc)
+    if written:
+        print("Written to output sheet into same file")
+    else:
+        print("Already existed. Not Written")
     print("Test Done")
     # fig, ax = plt.subplots()
     # linesofinterest = resorted_dict["CPU Load max"]["piuncompr_1_nico-pi"]

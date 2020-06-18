@@ -12,17 +12,19 @@ class ahp_mat:
     CONSISTENT = 0.10
     poss = None
 
-    def __init__(self, arr, collist=None, name=None):
+    def __init__(self, df, name=None):
         """
             A class to calculate an ahp matrix.
-            Params: a (right-triangular) matrix filled in with the appropriate values
+            Params: a pandas Dataframe with a (right-triangular) matrix filled in with the appropriate values
         """
+        arr = df.to_numpy()
         tril = arr[np.tril_indices_from(arr,k=-1)]
         tril0 = np.where(tril==1.0,0.0,tril)
         if not np.all(tril0):
             arr = self.filtrilaltalt(arr)
+            df = pd.DataFrame(data=arr,index=df.index, columns=df.columns)
         self.name = name
-        self.df = pd.DataFrame(data=arr,index=collist,columns=collist)
+        self.df = df
         # Init of values that get set later on
         self.ci = None
         self.eigdf = None
@@ -34,11 +36,17 @@ class ahp_mat:
         """
             Multiplication override. Allows for multiplication with another ahp object
         """
+        if isinstance(other,ahp_mat):
+            return self.eigdf.to_numpy()*other.eigdf.to_numpy()
+        else:
+            return NotImplementedError
 
-        return self.eigdf.to_numpy()*other.eigdf.to_numpy()
-
-    __rmul__= __mul__
-
+    # __rmul__= __mul__
+    def __str__(self):
+        return self.name
+    
+    def __repr__(self):
+        return self.__str__()
 
     def getRelWeights(self):
         """

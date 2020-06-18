@@ -20,7 +20,8 @@ def assignwts(names,mc_dict):
     options = mc_dict[len(names)]
     idx = np.random.randint(0,high=len(options))
     arr = options[idx]
-    ahp = ahp_mat(arr,collist=names)
+    df = pd.DataFrame(arr,index=names,columns=names)
+    ahp = ahp_mat(df)
     return ahp 
 
 def evaluation(leveldict, vals_dict, indexlist):
@@ -128,13 +129,20 @@ if __name__=="__main__":
         weightingsdict[i] = ahpdict
 
     pfile = os.path.join(pdir, 'weightingsdict.pickle')
-    with open(pfile, 'wb') as f:
-        pickle.dump(weightingsdict, f)
+    if not os.path.exists(pfile):
+        with open(pfile, 'wb') as f:
+            pickle.dump(weightingsdict, f)
+        print("File {} Dumped".format(pfile))
+    else:
+        print("File {} already exists".format(pfile))
     xlsf = os.path.join(pdir, 'collectdf.xlsx')
-    with pd.ExcelWriter(xlsf) as writer:
-        collectdf.to_excel(writer)
-
-    print("Dumped files to {}".format(pdir))
+    if not os.path.exists(xlsf):    
+        with pd.ExcelWriter(xlsf) as writer:
+            collectdf.to_excel(writer)
+        print("File {} dumped".format(xlsf))
+    else:
+        print("File {} already exists".format(xlsf))
+    # print("Dumped files to {}".format(pdir))
     # print(collectdf)
     print("Test Done")
     

@@ -15,25 +15,30 @@ def getmax(df):
     """
 
     maxidcs = df.idxmax(axis=0)
-    if len(np.unique(maxidcs.values)) != len(df.columns.values):
+    maxrs = df.loc[maxidcs]
+    maxcls = maxrs.idxmax(axis=1)
+    if len(np.unique(maxcls) != len(df.columns.values)):
         maxidcs = sortbymax(df)
-    tup = list(zip(maxidcs.index, maxidcs["Max"]))
+    # Other check here.
+    elif len(np.unique(maxidcs.values)) != len(df.columns.values):
+        maxidcs = sortbymax(df)
+    tup = list(zip(maxidcs.index, maxidcs))
     return tup
 
-def sortbymax(df, n=5):
+def sortbymax(df, n=10):
     """
         Function to sort by the maximum values in dataframe
     """
     
-    outdf = pd.DataFrame(index=["Max"],columns=df.columns.values.tolist())
-    for col in df.columns.values.tolist():
+    outdf = pd.Series(index=df.columns.values.tolist())
+    for col in outdf.index.values.tolist():
         subdf = df.nlargest(n, col)
         for idx in subdf.index.values.tolist():
             maxcol = subdf.loc[idx].idxmax(axis=1)
             if maxcol == col:
-                outdf.at["Max",col] = idx
+                outdf.at[col] = int(idx)
                 break
-    return outdf.T
+    return outdf
 
 
 if __name__=="__main__":
@@ -51,7 +56,7 @@ if __name__=="__main__":
     with open(wgtsf, 'rb') as f:
         wgtsdict = pickle.load(f)
 
-    # Get out the maximum value for each of those things - TODO: most of these are double-loaded - check that we get the one where it is the biggest
+    # Get out the maximum value for each of those things
     maxrows = getmax(collectdf)
 
     # TODO: use the tuple coming out to build a quadruplet of name - maximum - index - and AHP leading to the results
@@ -69,12 +74,24 @@ if __name__=="__main__":
     separa = "====================================================================="
     # Print the AHPs which give the best results for the cases that we have
     for key, ldict in ahp_dict.items():
-        print("Option: {}, Value: {}\n".format(key, maxval_dict[key]))
-        print("Other Options:\n{}\n".format(maxrow_dict[key].T))
-        for k, lev in ldict.items():
-            print(k)
-            print(lev.df)
-            print("\n")
+        kay = key.replace(")","").replace("\'","").replace("(","")
+        print("TestLine")
+        ks = kay.split(',')
+        fname = ('_').join(ks)+".xlsx"
+        floc = os.path.join(pdir,fname)
+        if os.path.exists(floc):
+            print("File {} already exists. Not writing".format(floc))    
+            print("Option: {}, Value: {}\n".format(key, maxval_dict[key]))
+            print("Other Options:\n{}\n".format(maxrow_dict[key].T))
+            for k, lev in ldict.items():
+                print(k)
+                print(lev.df)
+                print("\n")
+        else:
+            with pd.ExcelWriter(floc) as writer:
+                maxrow_dict[key].to_excel(writer,sheet_name="Options")
+                for k, lev in ldict.items():
+                    lev.df.to_excel(writer, sheet_name=k)
         print(separa)
 
     print("Test Done")
